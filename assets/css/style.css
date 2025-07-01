@@ -1,0 +1,144 @@
+/* Reset */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
+  font-family: Arial, sans-serif;
+  color: rgba(255, 255, 255, 0);
+  background: transparent;
+  overflow-x: hidden;
+}
+
+.video-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  z-index: -2;
+}
+
+#bg-video {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.1); /* ✅ center + zoom out */
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.overlay {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 60px;
+  z-index: 2;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: -80px 0 -80px 0;
+}
+
+.logo img {
+  max-width: 400px;
+  height: auto;
+  display: block;
+}
+
+/* Accordion Menu */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 542px;
+  margin-bottom: 40px;
+}
+
+.accordion-item {
+  width: 100%;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Accordion Header: bump font-size to ~24px
+──────────────────────────────────────────────────────────────────── */
+.accordion-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid white;
+  color: white;
+  text-align: left;
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Accordion Content: collapse via max-height & animate
+──────────────────────────────────────────────────────────────────── */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 10px;
+  font-size: 14px;
+  color: white;
+  line-height: 1.6;
+}
+
+.accordion-content.show {
+  max-height: 500px;
+  padding: 10px;
+}
+
+.accordion-content a {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: bold;
+  color: rgb(0, 148, 27);
+  text-decoration: underline;
+  font-size: 1.2rem;
+}
+
+.accordion-content p {
+  font-size: 1rem;
+  font-weight: bolder;
+}
+
+/* Social Links */
+.social {
+  display: flex;
+  gap: 50px;
+  flex-wrap: wrap;
+  justify-content: center;
+  border: 2px solid white;
+  padding: 20px 115px;
+}
+
+.social a {
+  color: white;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+}
