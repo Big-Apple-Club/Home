@@ -76,9 +76,7 @@ body, html {
   width: 100%;
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   Accordion Header: bump font-size to ~24px
-──────────────────────────────────────────────────────────────────── */
+/* Accordion Header */
 .accordion-toggle {
   width: 100%;
   background: transparent;
@@ -95,9 +93,7 @@ body, html {
   align-items: center;
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   Accordion Content: collapse via max-height & animate
-──────────────────────────────────────────────────────────────────── */
+/* Accordion Content: collapse via max-height & animate */
 .accordion-content {
   max-height: 0;
   overflow: hidden;
@@ -108,8 +104,10 @@ body, html {
   line-height: 1.6;
 }
 
+/* FIXED: more space and overflow visible for embeds */
 .accordion-content.show {
-  max-height: 500px;
+  max-height: 1000px;    /* erhöht von 500px */
+  overflow: visible;     /* Inhalte werden nicht mehr abgeschnitten */
   padding: 10px;
 }
 
