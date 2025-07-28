@@ -104,10 +104,11 @@ body, html {
   line-height: 1.6;
 }
 
-/* FIXED: more space and overflow visible for embeds */
+/* aufgeklappt: keine Höhenbegrenzung mehr */
 .accordion-content.show {
-  max-height: 1000px;    /* erhöht von 500px */
-  overflow: visible;     /* Inhalte werden nicht mehr abgeschnitten */
+  max-height: none;    /* entfernt die Obergrenze */
+  height: auto;        /* passt sich dem Inhalt an */
+  overflow: visible;   /* zeigt alles an */
   padding: 10px;
 }
 
