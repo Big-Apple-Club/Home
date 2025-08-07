@@ -598,27 +598,37 @@
     // Determine current date (use the user's timezone). If the current date is
     // outside the range of available events, the earliest event date is used
     // instead.
-    const today = getBerlinToday();
-    const todayIso = toISODate(today);
+    const nowString = new Date().toLocaleString('en-CA', {
+      timeZone: 'Europe/Berlin',
+      hour12: false
+    });
+    const [todayIso, nowTimeFull] = nowString.split(', ');
+    const currentTime = nowTimeFull.slice(0, 5);
+    const today = new Date(todayIso);
+
+    // Helper to determine if an event is upcoming (today later or future date)
+    const isUpcoming = e =>
+      e.date > todayIso || (e.date === todayIso && e.time >= currentTime);
+
     // Load events from the JSON file or fall back to the embedded array on
-    // failure.  Each event receives a unique ID composed of its name, date and
-    // time.
+    // failure. Each event receives a unique ID composed of its name, date and
+    // time. Past events are filtered out so only upcoming entries remain.
     try {
       const res = await fetch('events.json');
       if (!res.ok) throw new Error('Failed to fetch events.json');
       const data = await res.json();
-      events = data.map(ev => {
+      events = data.filter(isUpcoming).map(ev => {
         const id = `${ev.name}|${ev.date}|${ev.time}`;
         return { ...ev, id };
       });
     } catch (err) {
-      const filtered = EVENTS_DATA.filter(e => e.date >= todayIso);
+      const filtered = EVENTS_DATA.filter(isUpcoming);
       events = filtered.map(ev => {
         const id = `${ev.name}|${ev.date}|${ev.time}`;
         return { ...ev, id };
       });
     }
-    events = events.filter(e => e.date >= todayIso);
+    events = events.filter(isUpcoming);
     // Determine the default selected date
     if (events.length > 0) {
       const eventDates = events.map(e => e.date).sort();
