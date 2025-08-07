@@ -1,66 +1,6 @@
 [
   {
-    "name": "Haw\u0101 Open Air",
-    "genre": "Festival/Electro",
-    "location": "Frankfurt Airport",
-    "latitude": 50.0379,
-    "longitude": 8.5622,
-    "date": "2025-07-20",
-    "time": "14:00",
-    "url": "https://hawa.ticket.io/"
-  },
-  {
-    "name": "Club House",
-    "genre": "House",
-    "location": "Chinaski",
-    "latitude": 50.117,
-    "longitude": 8.6675,
-    "date": "2025-08-01",
-    "time": "22:00",
-    "url": "https://chinaskiclub.de/"
-  },
-  {
-    "name": "ZirKuss",
-    "genre": "Circus/Club",
-    "location": "Pik Dame",
-    "latitude": 50.1039,
-    "longitude": 8.6649,
-    "date": "2025-08-01",
-    "time": "23:00",
-    "url": "https://www.pikdamefrankfurt.com"
-  },
-  {
-    "name": "Signature House",
-    "genre": "House",
-    "location": "Chinaski",
-    "latitude": 50.117,
-    "longitude": 8.6675,
-    "date": "2025-08-02",
-    "time": "23:00",
-    "url": "https://chinaskiclub.de/"
-  },
-  {
-    "name": "Pik Dame Hip-Hop",
-    "genre": "Hip Hop",
-    "location": "Pik Dame",
-    "latitude": 50.1039,
-    "longitude": 8.6649,
-    "date": "2025-08-02",
-    "time": "23:00",
-    "url": "https://www.pikdamefrankfurt.com"
-  },
-  {
-    "name": "Out of Office (OOO)",
-    "genre": "House/Disco",
-    "location": "Chinaski",
-    "latitude": 50.117,
-    "longitude": 8.6675,
-    "date": "2025-08-06",
-    "time": "18:00",
-    "url": "https://chinaskiclub.de/"
-  },
-  {
-    "name": "Zino\u2019s Hum Mod",
+    "name": "Zino’s Hum Mod",
     "genre": "House",
     "location": "Fortuna Irgendwo",
     "latitude": 50.1106,
@@ -410,7 +350,7 @@
     "url": "https://fortunairgendwo.ticket.io/"
   },
   {
-    "name": "Hinge Ohrw\u00fcrmer Party",
+    "name": "Hinge Ohrwürmer Party",
     "genre": "Pop Hits",
     "location": "Batschkapp",
     "latitude": 50.1309,
@@ -520,7 +460,7 @@
     "url": "https://affairsffm.ticket.io/"
   },
   {
-    "name": "HumMod \u2013 Golden Hour",
+    "name": "HumMod – Golden Hour",
     "genre": "House",
     "location": "Fortuna Irgendwo",
     "latitude": 50.1106,
@@ -560,7 +500,7 @@
     "url": "https://www.pikdamefrankfurt.com"
   },
   {
-    "name": "Old But Gold \u00dc30 Hip Hop Open Air",
+    "name": "Old But Gold Ü30 Hip Hop Open Air",
     "genre": "Hip Hop",
     "location": "Batschkapp",
     "latitude": 50.1309,
@@ -580,7 +520,7 @@
     "url": "https://fortunairgendwo.ticket.io/"
   },
   {
-    "name": "Electric Grooves x Berliner N\u00e4chte",
+    "name": "Electric Grooves x Berliner Nächte",
     "genre": "Techno/House",
     "location": "Tanzhaus West",
     "latitude": 50.098,
@@ -590,7 +530,7 @@
     "url": "https://milchsackfabrik.ticket.io/n8p3ehrp/"
   },
   {
-    "name": "World Club Dome \u2013 Zombie On Tour",
+    "name": "World Club Dome – Zombie On Tour",
     "genre": "Hardstyle/Electronic",
     "location": "ZOOM Frankfurt",
     "latitude": 50.116,

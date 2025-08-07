@@ -599,6 +599,7 @@
     // outside the range of available events, the earliest event date is used
     // instead.
     const today = getBerlinToday();
+    const todayIso = toISODate(today);
     // Load events from the JSON file or fall back to the embedded array on
     // failure.  Each event receives a unique ID composed of its name, date and
     // time.
@@ -611,17 +612,18 @@
         return { ...ev, id };
       });
     } catch (err) {
-      events = EVENTS_DATA.map(ev => {
+      const filtered = EVENTS_DATA.filter(e => e.date >= todayIso);
+      events = filtered.map(ev => {
         const id = `${ev.name}|${ev.date}|${ev.time}`;
         return { ...ev, id };
       });
     }
+    events = events.filter(e => e.date >= todayIso);
     // Determine the default selected date
     if (events.length > 0) {
       const eventDates = events.map(e => e.date).sort();
       const earliest = eventDates[0];
       const latest = eventDates[eventDates.length - 1];
-      const todayIso = toISODate(today);
       if (todayIso < earliest || todayIso > latest) {
         selectedDate = new Date(earliest);
       } else {
