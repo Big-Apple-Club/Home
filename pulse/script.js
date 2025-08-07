@@ -207,9 +207,9 @@ const year = date.getFullYear();
   }
 
   let events = [];
-  // Arrays of weekday names for UTC-based computations.
-  const WEEKDAY_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-  const WEEKDAY_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  // Arrays of weekday names (Monday-first) for UTC-based computations.
+  const WEEKDAY_LONG = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+  const WEEKDAY_SHORT = ['Mo','Di','Mi','Do','Fr','Sa','So'];
   // Array of dates (YYYY-MM-DD) for events currently in the top three. Used to
   // mark days in the calendar with a flame icon when a hot event occurs.
   let hotDates = [];
@@ -363,7 +363,7 @@ const year = date.getFullYear();
         dayEl.classList.add('active');
       }
       dayEl.dataset.date = iso;
-      const weekday = WEEKDAY_SHORT[d.getUTCDay()];
+      const weekday = WEEKDAY_SHORT[(d.getUTCDay() + 6) % 7];
       const dayNum = d.getUTCDate();
       const weekdayEl = document.createElement('div');
       weekdayEl.className = 'weekday';
@@ -440,7 +440,7 @@ const year = date.getFullYear();
       const meta = document.createElement('div');
       meta.className = 'meta';
       // Build date display: if event is today show 'Heute', else show 'YYYY-MM-DD – weekday'
-      const weekdayLong = WEEKDAY_LONG[ev.dateObj.getUTCDay()];
+      const weekdayLong = WEEKDAY_LONG[(ev.dateObj.getUTCDay() + 6) % 7];
       const todayIsoLocal = toISODate(new Date());
       const datePart = (ev.date === todayIsoLocal) ? 'Heute' : `${ev.date} – ${weekdayLong}`;
       meta.textContent = `${datePart} | ${ev.time}`;
@@ -531,7 +531,7 @@ const year = date.getFullYear();
       title.textContent = ev.name;
       const meta = document.createElement('div');
       meta.className = 'meta';
-      const weekdayLongH = WEEKDAY_LONG[ev.dateObj.getUTCDay()];
+      const weekdayLongH = WEEKDAY_LONG[(ev.dateObj.getUTCDay() + 6) % 7];
       const todayIsoLocalH = toISODate(new Date());
       const datePartH = (ev.date === todayIsoLocalH) ? 'Heute' : `${ev.date} – ${weekdayLongH}`;
       meta.textContent = `${datePartH} | ${ev.time}`;
