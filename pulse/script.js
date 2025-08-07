@@ -17,18 +17,6 @@
   const nextWeekBtn = document.getElementById('next-week');
   const todayBtn = document.getElementById('today-btn');
   const locationListEl = document.getElementById('location-list');
-
-// Hole das aktuelle Datum in deutscher Zeit (Berlin)
-const now = new Date();
-const berlinOffset = -now.getTimezoneOffset() / 60 + 1; // Sommerzeit: ggf. prüfen
-const berlinNow = new Date(now.getTime() + berlinOffset * 60 * 60 * 1000);
-
-// Alternativ sicherer mit toLocaleString:
-const berlinDate = new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
-const date = new Date(berlinDate);
-const day = date.getDate();
-const month = date.getMonth() + 1;
-const year = date.getFullYear();
   
   // The list of events.  
   // NOTE: This array is generated from events.json to avoid fetch issues when
@@ -220,10 +208,10 @@ const year = date.getFullYear();
    */
   function getWeekStart(date) {
     const d = new Date(date);
-    const dayIndex = d.getDay(); // 0 = Sun, 1 = Mon, ...
+    const dayIndex = d.getUTCDay(); // 0 = Sun, 1 = Mon, ...
     const mondayOffset = dayIndex === 0 ? -6 : 1 - dayIndex;
-    d.setDate(d.getDate() + mondayOffset);
-    d.setHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() + mondayOffset);
+    d.setUTCHours(0, 0, 0, 0);
     return d;
   }
 
@@ -233,7 +221,13 @@ const year = date.getFullYear();
    * @returns {string}
    */
   function toISODate(d) {
-    return d.toISOString().slice(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(d);
+  }
+
+  // Helper to get current date/time in Berlin timezone
+  function getBerlinToday() {
+    const berlinString = new Date().toLocaleString('en-CA', { timeZone: 'Europe/Berlin', hour12: false });
+    return new Date(berlinString);
   }
 
   /**
@@ -435,7 +429,7 @@ const year = date.getFullYear();
       // Build date display: if event is today show 'Heute', else show 'YYYY-MM-DD – weekday'
       const eventDate = new Date(ev.date);
       const weekdayLong = eventDate.toLocaleDateString('de-DE', { weekday: 'long' });
-      const todayIsoLocal = toISODate(new Date());
+      const todayIsoLocal = toISODate(getBerlinToday());
       const datePart = (ev.date === todayIsoLocal) ? 'Heute' : `${ev.date} – ${weekdayLong}`;
       meta.textContent = `${datePart} | ${ev.time}`;
       const loc = document.createElement('div');
@@ -527,7 +521,7 @@ const year = date.getFullYear();
       meta.className = 'meta';
       const eventDateH = new Date(ev.date);
       const weekdayLongH = eventDateH.toLocaleDateString('de-DE', { weekday: 'long' });
-      const todayIsoLocalH = toISODate(new Date());
+      const todayIsoLocalH = toISODate(getBerlinToday());
       const datePartH = (ev.date === todayIsoLocalH) ? 'Heute' : `${ev.date} – ${weekdayLongH}`;
       meta.textContent = `${datePartH} | ${ev.time}`;
       const loc = document.createElement('div');
@@ -589,7 +583,7 @@ const year = date.getFullYear();
     // Determine current date (use the user's timezone). If the current date is
     // outside the range of available events, the earliest event date is used
     // instead.
-    const today = new Date();
+    const today = getBerlinToday();
     // Load events from the JSON file or fall back to the embedded array on
     // failure.  Each event receives a unique ID composed of its name, date and
     // time.
@@ -651,7 +645,7 @@ const year = date.getFullYear();
     // Today button: jump to current date and week
     if (todayBtn) {
       todayBtn.addEventListener('click', () => {
-        const now = new Date();
+        const now = getBerlinToday();
         const todayIso = toISODate(now);
         selectedDate = new Date(todayIso);
         currentWeekStart = getWeekStart(selectedDate);
