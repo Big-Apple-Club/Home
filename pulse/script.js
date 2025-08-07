@@ -17,6 +17,13 @@
   const nextWeekBtn = document.getElementById('next-week');
   const todayBtn = document.getElementById('today-btn');
   const locationListEl = document.getElementById('location-list');
+  const totalFlamesEl = document.getElementById('total-flames');
+
+  const SUPABASE_URL = 'https://wzhkyieqtovzlqjncugq.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6aGt5aWVxdG92emxxam5jdWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1NzYwOTEsImV4cCI6MjA3MDE1MjA5MX0.bo731aSOB2Shsj30lZReaUBL0plaZioJGa_XeeYbHN4';
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const voteCounts = {};
+  let totalFlames = 0;
 
   // The list of events.  
   // NOTE: This array is generated from events.json to avoid fetch issues when
@@ -119,17 +126,16 @@
    * @param {string} eventId
    */
   function getVoteCount(eventId) {
-    const val = localStorage.getItem('vote_' + eventId);
-    return val ? parseInt(val, 10) : 0;
+    return voteCounts[eventId] || 0;
   }
 
   /**
-   * Persist vote count to localStorage.
+   * Persist vote count in memory.
    * @param {string} eventId
    * @param {number} count
    */
   function setVoteCount(eventId, count) {
-    localStorage.setItem('vote_' + eventId, String(count));
+    voteCounts[eventId] = count;
   }
 
   /**
@@ -150,11 +156,30 @@
     localStorage.setItem('lastVote_' + eventId, String(ts));
   }
 
+  function updateTotalFlameDisplay() {
+    if (totalFlamesEl) totalFlamesEl.textContent = totalFlames + '🔥';
+  }
+
+  async function fetchVotes() {
+    try {
+      const { data, error } = await sb.from('votes').select('event_id,count');
+      if (error) throw error;
+      totalFlames = 0;
+      data.forEach(row => {
+        voteCounts[row.event_id] = row.count;
+        totalFlames += row.count;
+      });
+      updateTotalFlameDisplay();
+    } catch (err) {
+      console.error('Failed to fetch votes', err);
+    }
+  }
+
   /**
    * Vote for the specified event. Enforces a two minute cool‑down.
    * @param {Object} eventObj
    */
-  function vote(eventObj) {
+  async function vote(eventObj) {
     const id = eventObj.id;
     const now = Date.now();
     const last = getLastVoteTime(id);
@@ -164,8 +189,28 @@
       alert(`Bitte warte noch ${remaining} Sekunden bevor du erneut für dieses Event abstimmst.`);
       return;
     }
-    const current = getVoteCount(id);
-    setVoteCount(id, current + 1);
+    let newCount = getVoteCount(id) + 1;
+    try {
+      const { data, error } = await sb
+        .from('votes')
+        .select('count')
+        .eq('event_id', id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        newCount = data.count + 1;
+        await sb.from('votes').update({ count: newCount }).eq('event_id', id);
+      } else {
+        await sb.from('votes').insert({ event_id: id, count: 1 });
+        newCount = 1;
+      }
+      setVoteCount(id, newCount);
+      totalFlames += 1;
+      updateTotalFlameDisplay();
+    } catch (err) {
+      console.error('Failed to record vote', err);
+      return;
+    }
     setLastVoteTime(id, now);
     renderHotThree();
     renderEventList();
@@ -182,13 +227,13 @@
     if (g.includes('house') && g.includes('techno')) return '#00ffff';
     if (g.includes('techno')) return '#00bfff';
     if (g.includes('house')) return '#39ff14';
-    if (g.includes('pop hits')) return '#ff69b4';
-    if (g.includes('pop')) return '#ff1493';
+    if (g.includes('pop hits')) return '#ff00ff';
+    if (g.includes('pop')) return '#ff00ff';
     if (g.includes('rock')) return '#ffa500';
     if (g.includes('metal') && g.includes('hardcore')) return '#8b0000';
     if (g.includes('metal')) return '#ff4500';
-    if (g.includes('hip hop') || g.includes('hiphop')) return '#9400d3';
-    if (g.includes('r&b')) return '#9370db';
+    if (g.includes('hip hop') || g.includes('hiphop') || g.includes('hip-hop')) return '#ff3131';
+    if (g.includes('r&b') || g.includes('rnb')) return '#ff8c00';
     if (g.includes('latin') || g.includes('cumbia')) return '#ffd700';
     if (g.includes('festival')) return '#00ff7f';
     if (g.includes('electronic')) return '#7b68ee';
@@ -453,7 +498,7 @@
   /**
    * Initialise the page: load events, set up week navigation and default dates.
    */
-  function init() {
+  async function init() {
     // Determine current date (use the user's timezone). For demonstration,
     // if there are events in the past relative to the current date, we keep the
     // current date so that the selector shows the week of the first event when
@@ -479,7 +524,7 @@
           return { ...ev, id };
         });
       })
-      .finally(() => {
+      .finally(async () => {
         // Determine default selected date: if today's week contains events, use today; otherwise use earliest
         if (events.length > 0) {
           const eventDates = events.map(e => e.date).sort();
@@ -495,6 +540,7 @@
           selectedDate = today;
         }
         currentWeekStart = getWeekStart(selectedDate);
+        await fetchVotes();
         renderDaySelector();
         renderHotThree();
         renderEventList();

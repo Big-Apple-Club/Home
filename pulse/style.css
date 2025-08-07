@@ -36,6 +36,25 @@ header h1 {
   font-weight: bold;
   letter-spacing: 1px;
   color: #39ff14; /* neon green title */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+header h1 img {
+  height: 1.8rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.total-flames {
+  font-size: 1.2rem;
+  color: #ff6f61;
+  font-weight: bold;
 }
 
 /* Week selector */
@@ -230,6 +249,34 @@ section.events-section h2 {
   font-size: 0.8rem;
   color: #ccccff;
   white-space: nowrap;
+}
+
+/* Genre legend */
+.genre-legend {
+  margin-top: 1rem;
+  color: #ccccff;
+  font-size: 0.9rem;
+}
+
+.genre-legend ul {
+  list-style: none;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.genre-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.genre-legend .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
 }
 
 /* Hot three cards emphasise ranking */
