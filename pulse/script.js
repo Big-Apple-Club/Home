@@ -237,6 +237,21 @@ const year = date.getFullYear();
   }
 
   /**
+   * Get today's date in the Europe/Berlin timezone.
+   * @returns {Date}
+   */
+  function getBerlinToday() {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const iso = formatter.format(new Date());
+    return new Date(iso);
+  }
+
+  /**
    * Read vote count for a given event ID from localStorage.
    * @param {string} eventId
    */
@@ -651,7 +666,7 @@ const year = date.getFullYear();
     // Today button: jump to current date and week
     if (todayBtn) {
       todayBtn.addEventListener('click', () => {
-        const now = new Date();
+        const now = getBerlinToday();
         const todayIso = toISODate(now);
         selectedDate = new Date(todayIso);
         currentWeekStart = getWeekStart(selectedDate);
