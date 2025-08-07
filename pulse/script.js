@@ -207,6 +207,9 @@ const year = date.getFullYear();
   }
 
   let events = [];
+  // Arrays of weekday names for UTC-based computations.
+  const WEEKDAY_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const WEEKDAY_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
   // Array of dates (YYYY-MM-DD) for events currently in the top three. Used to
   // mark days in the calendar with a flame icon when a hot event occurs.
   let hotDates = [];
@@ -219,11 +222,10 @@ const year = date.getFullYear();
    * @returns {Date}
    */
   function getWeekStart(date) {
-    const d = new Date(date);
-    const dayIndex = d.getDay(); // 0 = Sun, 1 = Mon, ...
+    const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const dayIndex = d.getUTCDay(); // 0 = Sun, 1 = Mon, ...
     const mondayOffset = dayIndex === 0 ? -6 : 1 - dayIndex;
-    d.setDate(d.getDate() + mondayOffset);
-    d.setHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() + mondayOffset);
     return d;
   }
 
@@ -234,6 +236,11 @@ const year = date.getFullYear();
    */
   function toISODate(d) {
     return d.toISOString().slice(0, 10);
+  }
+
+  function parseISODate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
   }
 
   /**
@@ -335,7 +342,7 @@ const year = date.getFullYear();
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(currentWeekStart);
-      d.setDate(currentWeekStart.getDate() + i);
+      d.setUTCDate(currentWeekStart.getUTCDate() + i);
       days.push(d);
     }
     // Precompute event counts for each day in the current week
@@ -356,8 +363,8 @@ const year = date.getFullYear();
         dayEl.classList.add('active');
       }
       dayEl.dataset.date = iso;
-      const weekday = d.toLocaleDateString('de-DE', { weekday: 'short' });
-      const dayNum = d.getDate();
+      const weekday = WEEKDAY_SHORT[d.getUTCDay()];
+      const dayNum = d.getUTCDate();
       const weekdayEl = document.createElement('div');
       weekdayEl.className = 'weekday';
       weekdayEl.textContent = weekday;
@@ -367,7 +374,7 @@ const year = date.getFullYear();
       dayEl.appendChild(weekdayEl);
       dayEl.appendChild(dateEl);
       dayEl.addEventListener('click', () => {
-        selectedDate = new Date(dayEl.dataset.date);
+        selectedDate = parseISODate(dayEl.dataset.date);
         renderDaySelector();
         renderEventList();
       });
@@ -389,11 +396,11 @@ const year = date.getFullYear();
     });
     // Update week range text
     const end = new Date(currentWeekStart);
-    end.setDate(currentWeekStart.getDate() + 6);
-    const options = { month: 'short', day: 'numeric' };
+    end.setUTCDate(currentWeekStart.getUTCDate() + 6);
+    const options = { month: 'short', day: 'numeric', timeZone: 'UTC' };
     const startStr = currentWeekStart.toLocaleDateString('en-US', options);
     const endStr = end.toLocaleDateString('en-US', options);
-    const year = currentWeekStart.getFullYear();
+    const year = currentWeekStart.getUTCFullYear();
     weekRangeEl.textContent = `${startStr} - ${endStr}, ${year}`;
   }
 
@@ -433,8 +440,7 @@ const year = date.getFullYear();
       const meta = document.createElement('div');
       meta.className = 'meta';
       // Build date display: if event is today show 'Heute', else show 'YYYY-MM-DD – weekday'
-      const eventDate = new Date(ev.date);
-      const weekdayLong = eventDate.toLocaleDateString('de-DE', { weekday: 'long' });
+      const weekdayLong = WEEKDAY_LONG[ev.dateObj.getUTCDay()];
       const todayIsoLocal = toISODate(new Date());
       const datePart = (ev.date === todayIsoLocal) ? 'Heute' : `${ev.date} – ${weekdayLong}`;
       meta.textContent = `${datePart} | ${ev.time}`;
@@ -525,8 +531,7 @@ const year = date.getFullYear();
       title.textContent = ev.name;
       const meta = document.createElement('div');
       meta.className = 'meta';
-      const eventDateH = new Date(ev.date);
-      const weekdayLongH = eventDateH.toLocaleDateString('de-DE', { weekday: 'long' });
+      const weekdayLongH = WEEKDAY_LONG[ev.dateObj.getUTCDay()];
       const todayIsoLocalH = toISODate(new Date());
       const datePartH = (ev.date === todayIsoLocalH) ? 'Heute' : `${ev.date} – ${weekdayLongH}`;
       meta.textContent = `${datePartH} | ${ev.time}`;
@@ -599,12 +604,16 @@ const year = date.getFullYear();
       const data = await res.json();
       events = data.map(ev => {
         const id = `${ev.name}|${ev.date}|${ev.time}`;
-        return { ...ev, id };
+        const [y, m, d] = ev.date.split('-').map(Number);
+        const dateObj = new Date(Date.UTC(y, m - 1, d));
+        return { ...ev, id, dateObj };
       });
     } catch (err) {
       events = EVENTS_DATA.map(ev => {
         const id = `${ev.name}|${ev.date}|${ev.time}`;
-        return { ...ev, id };
+        const [y, m, d] = ev.date.split('-').map(Number);
+        const dateObj = new Date(Date.UTC(y, m - 1, d));
+        return { ...ev, id, dateObj };
       });
     }
     // Determine the default selected date
@@ -614,12 +623,12 @@ const year = date.getFullYear();
       const latest = eventDates[eventDates.length - 1];
       const todayIso = toISODate(today);
       if (todayIso < earliest || todayIso > latest) {
-        selectedDate = new Date(earliest);
+        selectedDate = parseISODate(earliest);
       } else {
-        selectedDate = new Date(todayIso);
+        selectedDate = parseISODate(todayIso);
       }
     } else {
-      selectedDate = today;
+      selectedDate = parseISODate(toISODate(today));
     }
     currentWeekStart = getWeekStart(selectedDate);
     // Retrieve the current flame counts from Supabase and update the header
@@ -632,7 +641,7 @@ const year = date.getFullYear();
     renderLocationList();
     // Week navigation buttons
     prevWeekBtn.addEventListener('click', () => {
-      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+      currentWeekStart.setUTCDate(currentWeekStart.getUTCDate() - 7);
       if (selectedDate < currentWeekStart || selectedDate > new Date(currentWeekStart.getTime() + 6 * 24 * 3600 * 1000)) {
         selectedDate = new Date(currentWeekStart);
       }
@@ -640,7 +649,7 @@ const year = date.getFullYear();
       renderEventList();
     });
     nextWeekBtn.addEventListener('click', () => {
-      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      currentWeekStart.setUTCDate(currentWeekStart.getUTCDate() + 7);
       if (selectedDate < currentWeekStart || selectedDate > new Date(currentWeekStart.getTime() + 6 * 24 * 3600 * 1000)) {
         selectedDate = new Date(currentWeekStart);
       }
@@ -653,7 +662,7 @@ const year = date.getFullYear();
       todayBtn.addEventListener('click', () => {
         const now = new Date();
         const todayIso = toISODate(now);
-        selectedDate = new Date(todayIso);
+        selectedDate = parseISODate(todayIso);
         currentWeekStart = getWeekStart(selectedDate);
         renderDaySelector();
         renderEventList();
