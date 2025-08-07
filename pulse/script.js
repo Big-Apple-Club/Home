@@ -18,6 +18,18 @@
   const todayBtn = document.getElementById('today-btn');
   const locationListEl = document.getElementById('location-list');
 
+// Hole das aktuelle Datum in deutscher Zeit (Berlin)
+const now = new Date();
+const berlinOffset = -now.getTimezoneOffset() / 60 + 1; // Sommerzeit: ggf. prüfen
+const berlinNow = new Date(now.getTime() + berlinOffset * 60 * 60 * 1000);
+
+// Alternativ sicherer mit toLocaleString:
+const berlinDate = new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
+const date = new Date(berlinDate);
+const day = date.getDate();
+const month = date.getMonth() + 1;
+const year = date.getFullYear();
+  
   // The list of events.  
   // NOTE: This array is generated from events.json to avoid fetch issues when
   // the site is opened from the file system.  When hosting this project on a
