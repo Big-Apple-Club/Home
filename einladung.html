@@ -216,7 +216,7 @@
 
         // --- Gemini API Call Logic ---
         const getWineSuggestion = async () => {
-            const apiKey = "";
+            const apiKey = "AIzaSyAOoCySDqkWf4_SakVzXtDB3PAOGWTGy80"; // <--- Dein API Schlüssel ist jetzt hier
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             const prompt = `Du bist ein lockerer Weinkenner. Empfiehl einen interessanten Wein (rot, weiß oder rosé) unter 20€ für eine Weinprobe auf einer spontanen Party von Studierenden. Antworte auf Deutsch. Deine Antwort MUSS folgendem Format folgen:\nWEINNAME\nEine kurze, witzige Beschreibung (maximal 3-4 Sätze).`;
             const payload = { contents: [{ parts: [{ text: prompt }] }], };
@@ -321,4 +321,6 @@
     </script>
 </body>
 </html>
+
+
 
