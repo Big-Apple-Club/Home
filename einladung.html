@@ -314,6 +314,7 @@
         closeModalBtn.addEventListener('click', closeModal);
         wineModal.addEventListener('click', (e) => { if (e.target === wineModal) closeModal(); });
         absageBtn.addEventListener('mouseover', moveAbsageButton);
+        absageBtn.addEventListener('click', moveAbsageButton); // <-- Hinzugefügt für Klicks & Taps
         zusageBtn.addEventListener('click', triggerConfetti);
 
         // --- Initialisierung ---
@@ -321,6 +322,4 @@
     </script>
 </body>
 </html>
-
-
 
