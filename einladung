@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einladung zur BA-Abgabe Feier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+        .card-container {
+            background-color: #f7f3e9; /* Cremiger Hintergrund */
+            background-image:
+                radial-gradient(circle at 100% 0, rgba(200, 160, 120, 0.1) 15%, transparent 40%),
+                radial-gradient(circle at 0 100%, rgba(200, 160, 120, 0.1) 15%, transparent 40%);
+        }
+        /* Gemini Feature: Modal Animation */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 300ms, transform 300ms;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="card-container max-w-lg w-full bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-500">
+        <div class="p-8 md:p-12 text-center text-gray-800 relative">
+
+            <!-- Header -->
+            <p class="text-sm uppercase tracking-widest text-amber-800">ENDLICH FERTIG!</p>
+            <h1 class="font-playfair text-4xl md:text-5xl font-bold mt-2 mb-4 text-gray-900">
+                DAS LETZTE PAPER
+            </h1>
+            <p class="mb-8 max-w-md mx-auto">
+                Meine Bachelorarbeit ist abgegeben und das muss gefeiert werden!
+                Ich schmeiße eine spontane, kleine Runde bei uns.
+            </p>
+
+            <!-- Wann & Wo -->
+            <div class="space-y-4 mb-8">
+                <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8">
+                    <div class="flex items-center justify-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="font-semibold">MORGEN ABEND</span>
+                    </div>
+                    <div class="flex items-center justify-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="font-semibold">19:30 UHR</span>
+                    </div>
+                </div>
+                 <!-- Countdown Timer -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center pt-4">
+                    <div>
+                        <span class="text-sm uppercase tracking-wider text-amber-800">Countdown bis Abgabe</span>
+                        <div id="submission-countdown" class="font-playfair text-2xl text-amber-900 pt-1"></div>
+                    </div>
+                    <div>
+                        <span class="text-sm uppercase tracking-wider text-amber-800">Party Countdown</span>
+                        <div id="party-countdown" class="font-playfair text-2xl text-amber-900 pt-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wein-Verkostung Special -->
+            <div class="bg-amber-800/10 rounded-xl p-6 mb-8 border border-amber-800/20">
+                <h2 class="font-playfair text-2xl font-bold text-amber-900 mb-2">Wein-Verkostung 🍷</h2>
+                <p class="text-gray-700">
+                    Das Motto des Abends! Bringt bitte <strong class="font-semibold">alle eine Flasche Wein</strong> mit, die wir dann gemeinsam verkosten.
+                </p>
+                <!-- Gemini Feature: Button -->
+                <button id="get-wine-suggestion-btn" class="mt-4 inline-flex items-center gap-2 bg-amber-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-amber-900 transition-colors duration-300 transform hover:scale-105">
+                    ✨ Wein-Idee für mich
+                </button>
+            </div>
+
+            <!-- Essen & Plan -->
+            <div class="text-left space-y-4 mb-6">
+                 <div class="flex items-start gap-4">
+                     <span class="text-amber-800 mt-1">🍕</span>
+                     <p><strong class="font-semibold">Für den kleinen Hunger:</strong> Es gibt Bruschetta und Pizza (solange der Vorrat reicht)!</p>
+                 </div>
+                 <div class="flex items-start gap-4">
+                    <span class="text-amber-800 mt-1">🎶</span>
+                     <p><strong class="font-semibold">Der Plan:</strong> Open-End bei uns und später ziehen wir noch weiter, um die Nachbarn zu schonen. ;)</p>
+                 </div>
+            </div>
+
+            <!-- RSVP Buttons -->
+            <div id="rsvp-container" class="relative h-28 mt-6 mb-4">
+                <button id="zusage-btn" class="absolute top-1/2 left-[30%] -translate-x-1/2 -translate-y-1/2 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 transition-all duration-300 transform">
+                    Zusage!
+                </button>
+                <button id="absage-btn" class="absolute top-1/2 left-[70%] -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all duration-300">
+                    Absage
+                </button>
+            </div>
+
+
+            <!-- Footer -->
+            <div class="border-t border-gray-300 pt-6">
+                 <p class="italic text-gray-600">Ich freue mich riesig, wenn ihr spontan dabei seid!</p>
+                 <p class="font-playfair text-2xl mt-4 text-gray-900">~ LG LJF</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Gemini Feature: Modal for Wine Suggestion -->
+    <div id="wine-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden modal-enter">
+        <div class="card-container max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center relative">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="modal-content">
+                <!-- Loading state -->
+                <div id="loading-state">
+                    <h3 class="font-playfair text-2xl font-bold text-amber-900 mb-2">Suche perfekten Wein...</h3>
+                    <div class="flex justify-center items-center p-4">
+                        <svg class="animate-spin h-8 w-8 text-amber-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Result state -->
+                <div id="result-state" class="hidden">
+                    <h3 class="font-playfair text-2xl font-bold text-amber-900 mb-2" id="wine-name"></h3>
+                    <p class="text-gray-700" id="wine-description"></p>
+                </div>
+                 <!-- Error state -->
+                <div id="error-state" class="hidden">
+                    <h3 class="font-playfair text-2xl font-bold text-red-700 mb-2">Hoppla!</h3>
+                    <p class="text-gray-700">Die Weinflaschen sind uns wohl aus dem Regal gefallen. Bitte versuch es später noch einmal.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Element References ---
+        const getWineSuggestionBtn = document.getElementById('get-wine-suggestion-btn');
+        const wineModal = document.getElementById('wine-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalContent = document.getElementById('modal-content');
+        const loadingState = document.getElementById('loading-state');
+        const resultState = document.getElementById('result-state');
+        const errorState = document.getElementById('error-state');
+        const wineNameEl = document.getElementById('wine-name');
+        const wineDescriptionEl = document.getElementById('wine-description');
+        const submissionCountdownEl = document.getElementById('submission-countdown');
+        const partyCountdownEl = document.getElementById('party-countdown');
+        const zusageBtn = document.getElementById('zusage-btn');
+        const absageBtn = document.getElementById('absage-btn');
+        const rsvpContainer = document.getElementById('rsvp-container');
+        let zusageScale = 1.0;
+
+
+        // --- Countdown Logic ---
+        const createCountdown = (element, targetTime, finishedMessage) => {
+            if (!element) return;
+            const countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = targetTime - now;
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    element.innerHTML = finishedMessage;
+                    return;
+                }
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                let countdownText = '';
+                if (days > 0) countdownText += `${days}d `;
+                countdownText += `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+                element.innerHTML = countdownText;
+            }, 1000);
+        };
+
+        const initializeCountdowns = () => {
+             const tomorrow = new Date();
+             tomorrow.setDate(tomorrow.getDate() + 1);
+             const submissionTargetDate = new Date(tomorrow);
+             submissionTargetDate.setHours(14, 0, 0, 0);
+             const partyTargetDate = new Date(tomorrow);
+             partyTargetDate.setHours(19, 30, 0, 0);
+             createCountdown(submissionCountdownEl, submissionTargetDate.getTime(), "Abgegeben!");
+             createCountdown(partyCountdownEl, partyTargetDate.getTime(), "Party läuft!");
+        };
+
+        // --- Gemini API Call Logic ---
+        const getWineSuggestion = async () => {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const prompt = `Du bist ein lockerer Weinkenner. Empfiehl einen interessanten Wein (rot, weiß oder rosé) unter 20€ für eine Weinprobe auf einer spontanen Party von Studierenden. Antworte auf Deutsch. Deine Antwort MUSS folgendem Format folgen:\nWEINNAME\nEine kurze, witzige Beschreibung (maximal 3-4 Sätze).`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }], };
+            let response;
+            try {
+                let attempt = 0;
+                const maxAttempts = 5;
+                while (attempt < maxAttempts) {
+                    response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) break;
+                    if (response.status === 429 || response.status >= 500) {
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        attempt++;
+                    } else { throw new Error(`API Error: ${response.statusText}`); }
+                }
+                if (!response.ok) throw new Error('API request failed after multiple retries.');
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Invalid response from API.");
+                const [name, ...descriptionParts] = text.split('\n');
+                const description = descriptionParts.join('\n');
+                return { name: name.trim(), description: description.trim() };
+            } catch (error) {
+                console.error("Fehler beim Abrufen des Wein-Vorschlags:", error);
+                return null;
+            }
+        };
+
+        // --- Modal Control ---
+        const openModal = () => {
+            wineModal.classList.remove('hidden');
+            setTimeout(() => wineModal.classList.add('modal-enter-active'), 10);
+        };
+        const closeModal = () => {
+            wineModal.classList.remove('modal-enter-active');
+            wineModal.classList.add('modal-exit-active');
+            setTimeout(() => {
+                wineModal.classList.add('hidden');
+                wineModal.classList.remove('modal-exit-active');
+            }, 300);
+        };
+        const showLoading = () => {
+            loadingState.classList.remove('hidden');
+            resultState.classList.add('hidden');
+            errorState.classList.add('hidden');
+        };
+        const showResult = (name, description) => {
+            wineNameEl.textContent = name;
+            wineDescriptionEl.textContent = description;
+            loadingState.classList.add('hidden');
+            resultState.classList.remove('hidden');
+            errorState.classList.add('hidden');
+        };
+        const showError = () => {
+            loadingState.classList.add('hidden');
+            resultState.classList.add('hidden');
+            errorState.classList.remove('hidden');
+        }
+
+        // --- RSVP Button Logic ---
+        const moveAbsageButton = () => {
+            const containerRect = rsvpContainer.getBoundingClientRect();
+            const btnRect = absageBtn.getBoundingClientRect();
+            const maxTop = containerRect.height - btnRect.height;
+            const maxLeft = containerRect.width - btnRect.width;
+            const newTop = Math.random() * maxTop;
+            const newLeft = Math.random() * maxLeft;
+            absageBtn.style.top = `${newTop}px`;
+            absageBtn.style.left = `${newLeft}px`;
+            zusageScale += 0.1;
+            zusageBtn.style.transform = `translate(-50%, -50%) scale(${zusageScale})`;
+        };
+
+        const triggerConfetti = () => {
+            zusageBtn.disabled = true;
+            absageBtn.style.display = 'none';
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            zusageBtn.textContent = 'Super, bis dann! 🎉';
+            zusageBtn.style.transform = 'translate(-50%, -50%) scale(1.1)';
+        };
+
+
+        // --- Event Listeners ---
+        getWineSuggestionBtn.addEventListener('click', async () => {
+            openModal();
+            showLoading();
+            const suggestion = await getWineSuggestion();
+            if (suggestion) {
+                showResult(suggestion.name, suggestion.description);
+            } else {
+                showError();
+            }
+        });
+        closeModalBtn.addEventListener('click', closeModal);
+        wineModal.addEventListener('click', (e) => { if (e.target === wineModal) closeModal(); });
+        absageBtn.addEventListener('mouseover', moveAbsageButton);
+        zusageBtn.addEventListener('click', triggerConfetti);
+
+        // --- Initialisierung ---
+        initializeCountdowns();
+    </script>
+</body>
+</html>
+
