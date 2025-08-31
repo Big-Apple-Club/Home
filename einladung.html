@@ -63,7 +63,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <span class="font-semibold">MORGEN ABEND</span>
+                        <span class="font-semibold">HEUTE ABEND</span>
                     </div>
                     <div class="flex items-center justify-center gap-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,12 +204,12 @@
         };
 
         const initializeCountdowns = () => {
-             const tomorrow = new Date();
-             tomorrow.setDate(tomorrow.getDate() + 1);
-             const submissionTargetDate = new Date(tomorrow);
-             submissionTargetDate.setHours(14, 0, 0, 0);
-             const partyTargetDate = new Date(tomorrow);
-             partyTargetDate.setHours(19, 30, 0, 0);
+             // Zielzeit Abgabe: 01.09.2025 um 14:00 Uhr
+             const submissionTargetDate = new Date('2025-09-01T14:00:00');
+             
+             // Zielzeit Party: 01.09.2025 um 19:30 Uhr
+             const partyTargetDate = new Date('2025-09-01T19:30:00');
+
              createCountdown(submissionCountdownEl, submissionTargetDate.getTime(), "Abgegeben!");
              createCountdown(partyCountdownEl, partyTargetDate.getTime(), "Party läuft!");
         };
