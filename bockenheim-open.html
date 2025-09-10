@@ -442,10 +442,14 @@
     attachRealtime();
   });
 
-  // sorgt dafür, dass das Event-Dokument existiert
-  async function ensureEventDoc(){
-    await setDoc(eventDoc, { currentStopIndex: -1 }, { merge:true });
+// sorgt dafür, dass das Event-Dokument existiert (ohne den Stop zu überschreiben)
+async function ensureEventDoc(){
+  const snap = await getDoc(eventDoc);
+  if (!snap.exists()) {
+    await setDoc(eventDoc, { currentStopIndex: -1 });
   }
+}
+
 
   // ergänzt alle fehlenden Teams; passt holes-Länge an HOLES an
   async function seedMissingTeams(){
