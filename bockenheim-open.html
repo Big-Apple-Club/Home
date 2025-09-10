@@ -221,7 +221,8 @@
     try { getAnalytics(app); } catch(e) {}
 
     // Optional App Check (protects your DB from abuse). Create a reCAPTCHA v3 key and add here if you have one.
-    try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider("__RECAPTCHA_SITE_KEY__"), isTokenAutoRefreshEnabled: true }); } catch(e) {}
+    // App Check ist optional. Entferne diesen Block bei Problemen, bis du einen eigenen reCAPTCHA v3 Key hast.
+    // try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider("__RECAPTCHA_SITE_KEY__"), isTokenAutoRefreshEnabled: true }); } catch(e) {}
 
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -264,6 +265,29 @@
      ***********************/
     document.addEventListener('DOMContentLoaded', () => {
       initCountdown();
+      initExCounter();
+      initMap();
+      initStopsList();
+      initLeaderboard();
+      initAdminPanel();
+
+      // Sign in anonymously (so we can apply security rules like `auth != null`)
+      signInAnonymously(auth).catch((err)=>{
+        console.error(err);
+        const s = document.getElementById('realtime-status');
+        if(s) s.textContent = '⚠️ Anmeldung fehlgeschlagen – prüfe Auth/Authorized Domains in Firebase.';
+      });
+
+      // Once signed in, attach realtime listeners
+      onAuthStateChanged(auth, (user)=>{
+        if(!user){
+          const s = document.getElementById('realtime-status');
+          if(s) s.textContent = '⚠️ Nicht angemeldet – Leaderboard zeigt nur lokale Defaults.';
+          return;
+        }
+        attachRealtimeListeners();
+      });
+    });
       initExCounter();
       initMap();
       initStopsList();
@@ -402,7 +426,15 @@
 
     function initLeaderboard(){
       const thead = document.querySelector('#leaderboard thead tr');
+      // Headings: Rank + Team + one column per hole + penalties + total
       thead.innerHTML = '<th>Rang</th><th>Team</th>' + tourConfig.stops.map((_,i)=>`<th>${i+1}</th>`).join('') + '<th>Strafen</th><th>Total</th>';
+
+      // Ensure default score structure exists even before Firebase sends first snapshot
+      tourConfig.teams.forEach(team=>{ if(!scores[team]) scores[team] = { holes:Array(tourConfig.stops.length).fill(0), penalty:0 }; });
+
+      // Render immediately so the table is never empty on first load
+      updateLeaderboardView();
+    }</th>`).join('') + '<th>Strafen</th><th>Total</th>';
       tourConfig.teams.forEach(team=>{ if(!scores[team]) scores[team] = { holes:Array(tourConfig.stops.length).fill(0), penalty:0 }; });
     }
 
