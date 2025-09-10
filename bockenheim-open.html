@@ -44,6 +44,7 @@
 
         .header {
             background-color: var(--primary-color);
+            /* Subtiles Muster für mehr Tiefe */
             background-image: 
                 linear-gradient(135deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
                 linear-gradient(225deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
@@ -54,7 +55,8 @@
             background-repeat: repeat;
             color: white;
             text-align: center;
-            padding: 3rem 1rem 4rem;
+            padding: 3rem 1rem 4rem; /* Mehr Padding für den neuen Look */
+            /* Dynamischere Form */
             clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
             margin-bottom: -3rem;
             position: relative;
@@ -67,6 +69,7 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 4px;
+            /* Verbesserter Textschatten für mehr Pop */
             text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
             animation: fadeInDown 1s ease-out;
         }
@@ -75,7 +78,7 @@
             margin: 0.5rem 0 0;
             font-size: clamp(1rem, 4vw, 1.2rem);
             opacity: 0.9;
-            font-weight: 700;
+            font-weight: 700; /* Etwas dicker für bessere Lesbarkeit */
         }
 
         .container {
@@ -207,6 +210,7 @@
             font-size: 1.1rem;
         }
         
+        /* Countdown and Timer Styles */
         .countdown, .timer {
             text-align: center;
         }
@@ -296,7 +300,7 @@
             background-color: #a32222;
         }
         .admin-panel button.confirm-button {
-            background-color: #ff3d00;
+            background-color: #ff3d00; /* Bright orange/red */
             color: white;
         }
 
@@ -417,12 +421,7 @@
     </section>
 </main>
 
-<script type="module">
-    // Firebase Imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+<script>
     const tourConfig = {
         stops: [
             { name: "Start: Basaltstraße 39", lat: 50.1259278, lon: 8.6441328, drink: "Long-Drink", par: 4, address: "Basaltstraße 39" },
@@ -449,112 +448,61 @@
     let scores = {};
     let mapMarkers = [];
     let currentStopIndex = -1;
-    let db, auth;
-    let scoresRef, tourStateRef;
-    let unsubScores, unsubTourState; // To hold unsubscribe functions
+    const storageKey = 'bockenheimOpenScores';
+    const stopStorageKey = 'bockenheimOpenCurrentStop';
 
-    // Initialize Firebase and App Logic
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'bockenheim-open-default';
-            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-            
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            setLogLevel('debug');
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    console.log("User is signed in:", user.uid);
-                    // Define Firestore document references once user is authenticated
-                    scoresRef = doc(db, `artifacts/${appId}/public/data/bockenheimOpen/scores`);
-                    tourStateRef = doc(db, `artifacts/${appId}/public/data/bockenheimOpen/tourState`);
-                    
-                    // Start the main app logic
-                    runApp();
-                } else {
-                    console.log("No user signed in, attempting to sign in...");
-                    try {
-                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                         } else {
-                            await signInAnonymously(auth);
-                         }
-                    } catch (error) {
-                        console.error("Anonymous sign-in failed:", error);
-                    }
-                }
-            });
-
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
-        }
-    });
-    
-    function runApp() {
-        // Initialize static UI components
+    document.addEventListener('DOMContentLoaded', () => {
         initCountdown();
         initExCounter();
         initMap();
         initStopsList();
+        initLeaderboard();
         initAdminPanel();
+        loadScores();
+        
+        const storedIndex = localStorage.getItem(stopStorageKey);
+        if (storedIndex !== null) {
+            currentStopIndex = parseInt(storedIndex, 10);
+            updateCurrentStopView(false); 
+        }
 
-        // Detach previous listeners if they exist to prevent memory leaks on re-runs
-        if (unsubScores) unsubScores();
-        if (unsubTourState) unsubTourState();
-
-        // Listen for real-time score updates
-        unsubScores = onSnapshot(scoresRef, (docSnap) => {
-            if (docSnap.exists()) {
-                scores = docSnap.data().scores || {};
-            } else {
-                console.log("No scores document found, initializing.");
-                // Initialize scores if document doesn't exist
-                tourConfig.teams.forEach(team => {
-                    if (!scores[team]) {
-                        scores[team] = { holes: Array(tourConfig.stops.length).fill(0), penalty: 0 };
-                    }
-                });
+        setInterval(() => {
+            const updatedIndex = localStorage.getItem(stopStorageKey);
+            if (updatedIndex !== null && parseInt(updatedIndex, 10) !== currentStopIndex) {
+                currentStopIndex = parseInt(updatedIndex, 10);
+                updateCurrentStopView(true); 
             }
-            initLeaderboard();
-            updateLeaderboardView();
-        });
-
-        // Listen for real-time tour state updates
-        unsubTourState = onSnapshot(tourStateRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().hasOwnProperty('currentStopIndex')) {
-                const newIndex = docSnap.data().currentStopIndex;
-                if(newIndex !== currentStopIndex){
-                     currentStopIndex = newIndex;
-                     updateCurrentStopView(true);
-                }
-            } else {
-                console.log("No tour state document found.");
-                currentStopIndex = -1;
-                updateCurrentStopView(false);
-            }
-        });
-    }
+            loadScores(); // Scores auch regelmäßig laden
+        }, 2500); 
+    });
 
     function initCountdown() {
         const now = new Date();
         const saturday = new Date(now);
-        saturday.setDate(now.getDate() + (6 - now.getDay() + 7) % 7);
+        saturday.setDate(now.getDate() + (6 - now.getDay() + 7) % 7); // Find the next Saturday
         saturday.setHours(21, 0, 0, 0);
         const targetDate = saturday.getTime();
+
         const countdownInterval = setInterval(() => {
-            const distance = targetDate - new Date().getTime();
+            const currentTime = new Date().getTime();
+            const distance = targetDate - currentTime;
+
             if (distance < 0) {
                 clearInterval(countdownInterval);
                 document.getElementById('countdown-container').style.display = 'none';
                 document.getElementById('countdown-message').textContent = 'Die Bockenheim Open haben begonnen! Viel Erfolg!';
                 return;
             }
-            document.getElementById('days').textContent = Math.floor(distance / (1000 * 60 * 60 * 24));
-            document.getElementById('hours').textContent = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            document.getElementById('minutes').textContent = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            document.getElementById('seconds').textContent = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').textContent = days;
+            document.getElementById('hours').textContent = hours;
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = seconds;
         }, 1000);
     }
     
@@ -563,9 +511,11 @@
         const startBtn = document.getElementById('timer-start');
         const resetBtn = document.getElementById('timer-reset');
         const display = document.getElementById('timer-display');
+        
         startBtn.addEventListener('click', () => {
             startBtn.disabled = true;
             let endTime = Date.now() + 10000;
+
             exTimerInterval = setInterval(() => {
                 const timeLeft = endTime - Date.now();
                 if (timeLeft <= 0) {
@@ -577,6 +527,7 @@
                 display.textContent = (timeLeft / 1000).toFixed(1);
             }, 100);
         });
+
         resetBtn.addEventListener('click', () => {
             clearInterval(exTimerInterval);
             display.textContent = "10.0";
@@ -587,7 +538,9 @@
     function initMap() {
         const map = L.map('map').setView([50.123, 8.646], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
         const routeCoordinates = tourConfig.stops.map(stop => [stop.lat, stop.lon]);
+
         tourConfig.stops.forEach((stop, index) => {
             const holeNum = index + 1;
             const icon = L.divIcon({
@@ -598,6 +551,7 @@
                 .bindPopup(`<b>Loch ${holeNum}: ${stop.name}</b><br>${stop.address}<br><i>Getränk: ${stop.drink}</i><br><b>Par: ${stop.par}</b>`);
             mapMarkers.push(marker);
         });
+
         L.polyline(routeCoordinates, { color: 'var(--primary-color)', weight: 4, opacity: 0.8 }).addTo(map);
     }
     
@@ -609,18 +563,28 @@
             const stopElement = document.createElement('div');
             stopElement.className = 'stop';
             stopElement.id = `stop-list-item-${index}`; 
-            stopElement.innerHTML = `<div class="stop-info"><div><h3>${holeNum}. ${stop.name}</h3><p class="drink">${stop.drink}</p></div><div class="par">${stop.par}<span>PAR</span></div></div>`;
+            stopElement.innerHTML = `
+                <div class="stop-info">
+                    <div><h3>${holeNum}. ${stop.name}</h3><p class="drink">Getränk: ${stop.drink}</p></div>
+                    <div class="par">${stop.par}<span>PAR</span></div>
+                </div>`;
             stopsListElement.appendChild(stopElement);
         });
     }
 
     function initLeaderboard() {
         const leaderboardHeader = document.querySelector("#leaderboard thead tr");
-        leaderboardHeader.innerHTML = '<th>Rang</th><th>Team</th>';
+        leaderboardHeader.innerHTML = '<th>Rang</th><th>Team</th>'; // Spalte für Rang hinzugefügt
         for (let i = 1; i <= tourConfig.stops.length; i++) {
-            leaderboardHeader.innerHTML += `<th>${i}</th>`;
+            const th = document.createElement('th'); th.textContent = `${i}`; leaderboardHeader.appendChild(th);
         }
         leaderboardHeader.innerHTML += '<th>Strafen</th><th>Total</th>';
+
+        tourConfig.teams.forEach(team => {
+            if (!scores[team]) {
+                scores[team] = { holes: Array(tourConfig.stops.length).fill(0), penalty: 0 };
+            }
+        });
     }
 
     function initAdminPanel() {
@@ -629,19 +593,24 @@
         const holeSelect = document.getElementById("hole-select");
         const currentStopSelect = document.getElementById("current-stop-select");
         const penaltySelect = document.getElementById("penalty-select");
+
         [scoreTeamSelect, penaltyTeamSelect, holeSelect, currentStopSelect, penaltySelect].forEach(el => el.innerHTML = '');
+
         tourConfig.teams.forEach(team => {
-            const option = `<option value="${team}">${team}</option>`;
-            scoreTeamSelect.innerHTML += option;
-            penaltyTeamSelect.innerHTML += option;
+            const option = document.createElement("option"); option.value = team; option.textContent = team;
+            scoreTeamSelect.appendChild(option.cloneNode(true));
+            penaltyTeamSelect.appendChild(option);
         });
+
         tourConfig.stops.forEach((stop, index) => {
-            const option = `<option value="${index}">Loch ${index + 1}: ${stop.name}</option>`;
-            holeSelect.innerHTML += option;
-            currentStopSelect.innerHTML += option;
+            const option = document.createElement("option"); option.value = index; option.textContent = `Loch ${index + 1}: ${stop.name}`;
+            holeSelect.appendChild(option.cloneNode(true));
+            currentStopSelect.appendChild(option);
         });
+        
         tourConfig.rules.forEach(rule => {
-            penaltySelect.innerHTML += `<option value="${rule.value}">${rule.text} (${rule.value > 0 ? '+' : ''}${rule.value})</option>`;
+            const option = document.createElement("option"); option.value = rule.value; option.textContent = `${rule.text} (${rule.value > 0 ? '+' : ''}${rule.value})`;
+            penaltySelect.appendChild(option);
         });
     }
     
@@ -649,17 +618,27 @@
         const leaderboardData = tourConfig.teams.map(team => {
             const teamData = scores[team] || { holes: Array(tourConfig.stops.length).fill(0), penalty: 0 };
             const totalHoles = teamData.holes.reduce((a, b) => a + b, 0);
-            return { name: team, ...teamData, total: totalHoles + teamData.penalty };
+            const total = totalHoles + teamData.penalty;
+            return { name: team, holes: teamData.holes, penalty: teamData.penalty, total: total };
         });
+
         leaderboardData.sort((a, b) => a.total - b.total);
+
         const leaderboardBody = document.querySelector("#leaderboard tbody");
-        leaderboardBody.innerHTML = '';
+        leaderboardBody.innerHTML = ''; // Clear existing rows
+
         leaderboardData.forEach((teamData, index) => {
             const rank = index + 1;
             const row = document.createElement("tr");
-            let rowHtml = `<td><b>${rank}.</b></td><td class="team-name">${teamData.name}</td>`;
-            teamData.holes.forEach(score => { rowHtml += `<td>${score > 0 ? score : '-'}</td>`; });
-            rowHtml += `<td>${teamData.penalty}</td><td class="total">${teamData.total}</td>`;
+            
+            let rowHtml = `<td><b>${rank}.</b></td>`; // Rang-Zelle
+            rowHtml += `<td class="team-name">${teamData.name}</td>`;
+            teamData.holes.forEach(score => {
+                rowHtml += `<td>${score > 0 ? score : '-'}</td>`;
+            });
+            rowHtml += `<td>${teamData.penalty}</td>`;
+            rowHtml += `<td class="total">${teamData.total}</td>`;
+            
             row.innerHTML = rowHtml;
             leaderboardBody.appendChild(row);
         });
@@ -670,10 +649,10 @@
              document.getElementById('current-challenge-card').style.display = 'none';
              return;
         }
-        const stop = tourConfig.stops[currentStopIndex];
-        const holeNum = currentStopIndex + 1;
+        const stop = tourConfig.stops[currentStopIndex]; const holeNum = currentStopIndex + 1;
+        const challengeCard = document.getElementById('current-challenge-card');
         document.getElementById('current-challenge-content').innerHTML = `<h3>Loch ${holeNum}: ${stop.name}</h3><p><strong>Getränk:</strong> ${stop.drink}</p><div class="par">${stop.par}<span>PAR</span></div>`;
-        document.getElementById('current-challenge-card').style.display = 'block';
+        challengeCard.style.display = 'block';
         document.querySelectorAll('.stop').forEach(el => el.classList.remove('active'));
         const activeStopElement = document.getElementById(`stop-list-item-${currentStopIndex}`);
         if(activeStopElement) {
@@ -682,12 +661,29 @@
         }
         mapMarkers.forEach((marker, index) => {
             const newSize = index === currentStopIndex ? 40 : 30;
+            const newAnchor = index === currentStopIndex ? 20 : 15;
             const iconHtml = `<div style="background-color: ${index === currentStopIndex ? 'var(--accent-color)' : 'var(--primary-color)'}; color: ${index === currentStopIndex ? 'black' : 'white'}; border-radius: 50%; width: ${newSize}px; height: ${newSize}px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: ${index === currentStopIndex ? 3 : 2}px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 1000;">${index + 1}</div>`;
-            marker.setIcon(L.divIcon({ html: iconHtml, className: '', iconSize: [newSize, newSize], iconAnchor: [newSize/2, newSize/2] }));
+            marker.setIcon(L.divIcon({ html: iconHtml, className: '', iconSize: [newSize, newSize], iconAnchor: [newAnchor, newAnchor] }));
         });
     }
 
-    // Admin Panel Functions (Global Scope)
+    function saveScores() {
+        localStorage.setItem(storageKey, JSON.stringify(scores));
+    }
+
+    function loadScores() {
+        const storedScores = localStorage.getItem(storageKey);
+        if (storedScores) {
+            scores = JSON.parse(storedScores);
+            tourConfig.teams.forEach(team => {
+                if (!scores[team]) {
+                    scores[team] = { holes: Array(tourConfig.stops.length).fill(0), penalty: 0 };
+                }
+            });
+        }
+        updateLeaderboardView();
+    }
+
     window.unlockAdmin = function() {
         if (document.getElementById('admin-password').value === tourConfig.adminPassword) {
             document.getElementById('login-section').style.display = 'none';
@@ -695,55 +691,70 @@
         } else { alert('Falsches Passwort!'); }
     }
 
-    window.updateScore = async function() {
+    window.updateScore = function() {
         const selectedTeam = document.getElementById("score-team-select").value;
         const selectedHole = parseInt(document.getElementById("hole-select").value);
         const scoreInput = document.getElementById('score-input');
         const scoreValue = parseInt(scoreInput.value);
+
         if (selectedTeam && !isNaN(selectedHole) && !isNaN(scoreValue) && scoreValue >= 0) {
             scores[selectedTeam].holes[selectedHole] = scoreValue;
-            await setDoc(scoresRef, { scores });
+            updateLeaderboardView();
+            saveScores();
             scoreInput.value = '';
         } else { alert('Bitte eine gültige Zahl für die Schlücke eintragen.'); }
     }
     
-    window.applyPenalty = async function() {
+    window.applyPenalty = function() {
         const selectedTeam = document.getElementById("penalty-team-select").value;
         const penaltyValue = parseInt(document.getElementById("penalty-select").value);
         if (selectedTeam && !isNaN(penaltyValue)) {
             scores[selectedTeam].penalty += penaltyValue;
-            await setDoc(scoresRef, { scores });
+            updateLeaderboardView();
+            saveScores();
         }
     }
 
-    window.setCurrentStop = async function() {
-        const selectedStopIndex = parseInt(document.getElementById('current-stop-select').value, 10);
-        await setDoc(tourStateRef, { currentStopIndex: selectedStopIndex });
+    window.setCurrentStop = function() {
+        const selectedStopIndex = document.getElementById('current-stop-select').value;
+        localStorage.setItem(stopStorageKey, selectedStopIndex);
+        if (parseInt(selectedStopIndex, 10) !== currentStopIndex) {
+             currentStopIndex = parseInt(selectedStopIndex, 10);
+             updateCurrentStopView(true);
+        }
     }
 
     window.requestFullReset = function() {
         const resetButton = document.getElementById('reset-button');
         const cancelButton = document.getElementById('cancel-reset-button');
+
         resetButton.textContent = 'SICHER? NOCHMAL KLICKEN ZUM LÖSCHEN!';
-        resetButton.classList.replace('danger-button', 'confirm-button');
+        resetButton.classList.remove('danger-button');
+        resetButton.classList.add('confirm-button');
         resetButton.setAttribute('onclick', 'executeFullReset()');
+
         cancelButton.style.display = 'block';
     }
 
     window.cancelReset = function() {
         const resetButton = document.getElementById('reset-button');
         const cancelButton = document.getElementById('cancel-reset-button');
+
         resetButton.textContent = 'ALLES ZURÜCKSETZEN';
-        resetButton.classList.replace('confirm-button', 'danger-button');
+        resetButton.classList.remove('confirm-button');
+        resetButton.classList.add('danger-button');
         resetButton.setAttribute('onclick', 'requestFullReset()');
+        
         cancelButton.style.display = 'none';
     }
 
-    window.executeFullReset = async function() {
-        await deleteDoc(scoresRef);
-        await deleteDoc(tourStateRef);
-        // UI will update automatically via listeners.
-        cancelReset(); // Reset button UI
+    window.executeFullReset = function() {
+        // Clear local storage
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(stopStorageKey);
+
+        // Reload the page to reset the state completely
+        window.location.reload();
     }
 </script>
 
