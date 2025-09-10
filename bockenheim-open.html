@@ -919,15 +919,16 @@
 </script>
 
 <!-- ======================================================= -->
-<!-- Firebase + Firestore Integration (überschreibt Funktionen) -->
+<!-- Firebase + Firestore Integration (fix: nur Firestore, kein localStorage) -->
 <!-- ======================================================= -->
 <script type="module">
   // Firebase SDK (modulare CDN-Imports)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import {
-    getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, deleteDoc
+    getFirestore, doc, setDoc, getDoc, onSnapshot, collection,
+    getDocs, deleteDoc
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
   // Deine Firebase Config
   const firebaseConfig = {
@@ -944,22 +945,33 @@
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
   const auth = getAuth(app);
-  await signInAnonymously(auth).catch(console.error);
 
-  // App-spezifisch
+  // --- App-spezifisch
   const EVENT_ID = "bockenheim-open-2025"; // ggf. anpassen
   const HOLES = window.tourConfig?.stops?.length ?? 9;
   const TEAMS = (window.tourConfig?.teams ?? []).slice();
-
   const teamsCol = collection(db, "events", EVENT_ID, "teams");
   const stateDoc = doc(db, "events", EVENT_ID, "state");
-
   const holesArray = (n=HOLES) => Array(n).fill(0);
+
+  // =====️ Debug Helpers
+  const log = (...a) => console.log("[BO-Firestore]", ...a);
+  const err = (...a) => console.error("[BO-Firestore]", ...a);
+
+  // ===== Auth + Start
+  signInAnonymously(auth).catch(err);
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    log("angemeldet (anonymous):", user.uid);
+
+    await seedIfEmpty();
+    attachRealtime();
+  });
 
   async function seedIfEmpty() {
     const snap = await getDocs(teamsCol);
     if (snap.empty) {
-      // Teams aus deinem UI mit 0 anlegen
+      log("Seed: lege Teams mit 0 an…");
       const ops = TEAMS.map(async (name) => {
         const ref = doc(db, "events", EVENT_ID, "teams", name);
         await setDoc(ref, { name, holes: holesArray(), penalty: 0 }, { merge: true });
@@ -969,10 +981,13 @@
     }
   }
 
-  // --- OVERRIDE: loadScores -> Firestore-Realtime ---
-  window.loadScores = function () {
-    // Listener Teams
+  function attachRealtime() {
+    // ⚠️ LocalStorage komplett ignorieren
+    window.localStorage?.removeItem?.('bockenheimOpenScores');
+
+    // Teams listener
     onSnapshot(teamsCol, (snap) => {
+      log("Teams snapshot:", snap.size, "docs");
       const nextScores = {};
       // Default 0 für alle Teams
       TEAMS.forEach(t => nextScores[t] = { holes: holesArray(), penalty: 0 });
@@ -989,80 +1004,68 @@
 
       window.scores = nextScores;
       if (typeof window.updateLeaderboardView === "function") window.updateLeaderboardView();
-    });
+    }, err);
 
-    // Listener aktueller Stop
+    // State listener
     onSnapshot(stateDoc, (docSnap) => {
       const st = docSnap.data() || { currentStopIndex: -1 };
       window.currentStopIndex = Number.isFinite(st.currentStopIndex) ? st.currentStopIndex : -1;
+      log("State snapshot: currentStopIndex =", window.currentStopIndex);
       if (typeof window.updateCurrentStopView === "function") window.updateCurrentStopView(false);
       const sel = document.getElementById('current-stop-select');
       if (sel) sel.value = String(window.currentStopIndex);
-    });
+    }, err);
 
-    // Initiale Nullwerte bei Erststart
-    seedIfEmpty();
-  };
+    // OVERRIDES: alle Schreibfunktionen → Firestore
+    window.updateScore = async function () {
+      const team = document.getElementById("score-team-select").value;
+      const hole = parseInt(document.getElementById("hole-select").value, 10);
+      const val  = parseInt(document.getElementById("score-input").value, 10);
+      if (!team || isNaN(hole) || hole<0 || hole>=HOLES || isNaN(val) || val<0) { alert("Bitte gültige Zahl eingeben."); return; }
 
-  // --- OVERRIDE: updateScore -> write to Firestore ---
-  window.updateScore = async function () {
-    const team = document.getElementById("score-team-select").value;
-    const hole = parseInt(document.getElementById("hole-select").value, 10);
-    const val  = parseInt(document.getElementById("score-input").value, 10);
+      const ref = doc(db, "events", EVENT_ID, "teams", team);
+      const snap = await getDoc(ref);
+      const base = snap.exists() ? snap.data() : { name: team, holes: holesArray(), penalty: 0 };
+      const holes = Array.isArray(base.holes) ? base.holes : holesArray();
+      holes[hole] = val;
+      await setDoc(ref, { name: team, holes, penalty: base.penalty||0 }, { merge: true });
+      document.getElementById("score-input").value = "";
+      log("Score gesetzt:", team, "Loch", hole+1, "=", val);
+    };
 
-    if (!team || isNaN(hole) || hole < 0 || hole >= HOLES || isNaN(val) || val < 0) {
-      alert("Bitte gültige Zahl eingeben."); return;
-    }
+    window.applyPenalty = async function () {
+      const team = document.getElementById('penalty-team-select').value;
+      const delta = parseInt(document.getElementById('penalty-select').value, 10);
+      if (!team || isNaN(delta)) return;
 
-    const ref = doc(db, "events", EVENT_ID, "teams", team);
-    const snap = await getDoc(ref);
-    const base = snap.exists() ? snap.data() : { name: team, holes: holesArray(), penalty: 0 };
-    const holes = Array.isArray(base.holes) ? base.holes : holesArray();
-    holes[hole] = val;
-    await setDoc(ref, { name: team, holes, penalty: base.penalty || 0 }, { merge: true });
+      const ref = doc(db, "events", EVENT_ID, "teams", team);
+      const snap = await getDoc(ref);
+      const base = snap.exists()? snap.data() : { name: team, holes: holesArray(), penalty: 0 };
+      await setDoc(ref, { name: team, holes: base.holes||holesArray(), penalty: (base.penalty||0)+delta }, { merge: true });
+      log("Penalty applied:", team, delta);
+    };
 
-    document.getElementById("score-input").value = "";
-  };
+    window.setCurrentStop = async function () {
+      const idx = parseInt(document.getElementById('current-stop-select').value, 10);
+      if (isNaN(idx)) return;
+      await setDoc(stateDoc, { currentStopIndex: idx }, { merge: true });
+      log("Current stop gesetzt:", idx);
+    };
 
-  // --- OVERRIDE: applyPenalty -> write to Firestore ---
-  window.applyPenalty = async function () {
-    const team = document.getElementById('penalty-team-select').value;
-    const delta = parseInt(document.getElementById('penalty-select').value, 10);
-    if (!team || isNaN(delta)) return;
-
-    const ref = doc(db, "events", EVENT_ID, "teams", team);
-    const snap = await getDoc(ref);
-    const base = snap.exists() ? snap.data() : { name: team, holes: holesArray(), penalty: 0 };
-    const nextPenalty = Number(base.penalty || 0) + delta;
-    await setDoc(ref, { name: team, holes: base.holes || holesArray(), penalty: nextPenalty }, { merge: true });
-  };
-
-  // --- OVERRIDE: setCurrentStop -> write to Firestore ---
-  window.setCurrentStop = async function () {
-    const idx = parseInt(document.getElementById('current-stop-select').value, 10);
-    if (isNaN(idx)) return;
-    await setDoc(stateDoc, { currentStopIndex: idx }, { merge: true });
-  };
-
-  // --- OVERRIDE: executeFullReset -> Firestore löschen + reseed ---
-  window.executeFullReset = async function () {
-    // Alle Team-Dokumente löschen
-    const snap = await getDocs(teamsCol);
-    const deletions = [];
-    snap.forEach(d => deletions.push(deleteDoc(d.ref)));
-    await Promise.all(deletions);
-
-    // Neu initialisieren (alles 0)
-    await seedIfEmpty();
-
-    alert("Zurückgesetzt.");
-    // UI-Button zurücksetzen
-    window.cancelReset();
-  };
-
-  // Wichtig: Firestore-Load sofort aktivieren (überschreibt evtl. vorherigen localStorage-Load)
-  window.loadScores();
+    window.executeFullReset = async function () {
+      if (!confirm("Wirklich ALLES zurücksetzen?")) return;
+      const snap = await getDocs(teamsCol);
+      const deletions = [];
+      snap.forEach(d => deletions.push(deleteDoc(d.ref)));
+      await Promise.all(deletions);
+      await seedIfEmpty();
+      alert("Zurückgesetzt.");
+      window.cancelReset?.();
+      log("Reset done.");
+    };
+  }
 </script>
+
 
 </body>
 </html>
