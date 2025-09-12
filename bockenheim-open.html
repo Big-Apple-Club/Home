@@ -221,11 +221,11 @@
       { name:"Extrablatt", lat:50.1198957, lon:8.6504733, drink:"Shot", par:1, address:"Bockenheimer Warte" },
       { name:"Doctor Flotte", lat:50.1204769, lon:8.65017, drink:"Bier / Appler / Wein", par:3, address:"Leipziger Str. 20" }
     ],
-    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta","Team Echo","Team Foxtrot"],
+    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta","Team Echo"], /* Foxtrot entfernt */
     adminPassword:"bockenheim",
     rules:[
       { text:"Getränk verschüttet", value:2 },
-      { text:"Hole-in-One (Exen)", value:-2 },  // << geändert
+      { text:"Hole-in-One (Exen)", value:-2 },  // bleibt -2
       { text:"Loch nicht beendet", value:3 },
       { text:"Partner-Regel missachtet", value:3 },
       { text:"Party-Hut abgenommen", value:1 }
@@ -421,7 +421,7 @@
   // --- App-IDs ---
   const EVENT_ID = "bockenheim-open-2025";
   const HOLES = window.tourConfig?.stops?.length ?? 9;
-  const TEAMS = (window.tourConfig?.teams ?? []).slice();
+  const TEAMS = (window.tourConfig?.teams ?? []).slice(); // 5 Teams
 
   // --- Firestore Refs ---
   const teamsCol = collection(db, "events", EVENT_ID, "teams");
@@ -438,38 +438,48 @@
     if(!user) return;
     log("angemeldet (anonymous):", user.uid);
     await ensureEventDoc();
-    await seedMissingTeams(); // ergänzt fehlende Teams IMMER
+    await syncTeamsToConfig(); // ergänzt fehlende & löscht überzählige Teams
     attachRealtime();
   });
 
-// sorgt dafür, dass das Event-Dokument existiert (ohne den Stop zu überschreiben)
-async function ensureEventDoc(){
-  const snap = await getDoc(eventDoc);
-  if (!snap.exists()) {
-    await setDoc(eventDoc, { currentStopIndex: -1 });
+  // sorgt dafür, dass das Event-Dokument existiert (ohne den Stop zu überschreiben)
+  async function ensureEventDoc(){
+    const snap = await getDoc(eventDoc);
+    if (!snap.exists()) {
+      await setDoc(eventDoc, { currentStopIndex: -1 });
+    }
   }
-}
 
-
-  // ergänzt alle fehlenden Teams; passt holes-Länge an HOLES an
-  async function seedMissingTeams(){
+  // bringt Firestore-Teams in Einklang mit tourConfig.teams
+  async function syncTeamsToConfig(){
     const snap = await getDocs(teamsCol);
-    const existing = new Set();
-    snap.forEach(d=>existing.add(d.id));
+    const inDb = new Map(); // id -> ref
+    snap.forEach(d=>inDb.set(d.id, d.ref));
+
     const ops = [];
 
+    // 1) fehlende Teams anlegen
     TEAMS.forEach(name=>{
-      if(!existing.has(name)){
+      if(!inDb.has(name)){
         ops.push(setDoc(doc(db,"events",EVENT_ID,"teams",name), { name, holes:holesArray(), penalty:0 }, { merge:true }));
       }
     });
 
-    // padding für bereits existierende Teams
-    snap.forEach(d=>{
-      const data=d.data()||{};
-      const arr=Array.isArray(data.holes)? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0))) : holesArray();
-      ops.push(setDoc(d.ref, { holes:arr, penalty:Number.isFinite(data.penalty)?data.penalty:0, name:data.name||d.id }, { merge:true }));
-    });
+    // 2) überzählige Teams löschen (alles was NICHT in TEAMS ist)
+    for (const [id, ref] of inDb.entries()){
+      if (!TEAMS.includes(id)) {
+        ops.push(deleteDoc(ref));
+      } else {
+        // vorhandene Teams ggf. auf richtige HOLES-Länge padden
+        // (lese kurz und schreibe korrigiert zurück)
+        const dataSnap = await getDoc(ref);
+        const data = dataSnap.data() || {};
+        const arr = Array.isArray(data.holes)
+          ? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0)))
+          : holesArray();
+        ops.push(setDoc(ref, { holes:arr, penalty:Number.isFinite(data.penalty)?data.penalty:0, name:data.name||id }, { merge:true }));
+      }
+    }
 
     if (ops.length) await Promise.all(ops);
   }
@@ -486,6 +496,7 @@ async function ensureEventDoc(){
       snap.forEach(d=>{
         const data=d.data()||{};
         const name=data.name || d.id;
+        if (!TEAMS.includes(name)) return; // Sicherheit: nur erwartete Teams rendern
         const holes = Array.isArray(data.holes)
           ? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0)))
           : holesArray();
@@ -557,7 +568,7 @@ async function ensureEventDoc(){
       const deletions=[]; snap.forEach(d=>deletions.push(deleteDoc(d.ref)));
       await Promise.all(deletions);
       await setDoc(eventDoc, { currentStopIndex:-1 }, { merge:true });
-      await seedMissingTeams();
+      await syncTeamsToConfig(); // setzt wieder exakt 5 Teams
       alert("Zurückgesetzt.");
       window.cancelReset?.();
       log("Reset done.");
