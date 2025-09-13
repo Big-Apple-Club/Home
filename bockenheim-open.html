@@ -97,7 +97,6 @@
 </header>
 
 <main class="container">
-  <!-- Countdown -->
   <section class="card countdown">
     <h2>Tour Start</h2>
     <div id="countdown-container" class="countdown-container">
@@ -109,7 +108,6 @@
     <p id="countdown-message" style="font-weight:700;margin-top:8px;"></p>
   </section>
 
-  <!-- Aktuelle Challenge -->
   <section class="card" id="current-challenge-card">
     <h2>AKTUELLE CHALLENGE</h2>
     <div id="current-challenge-content">
@@ -117,19 +115,16 @@
     </div>
   </section>
 
-  <!-- Karte -->
   <section class="card">
     <h2>Die Route & Karte</h2>
     <div id="map"></div>
   </section>
 
-  <!-- Tour-Plan -->
   <section class="card">
     <h2>Die 9 Löcher (Tour-Plan)</h2>
     <div id="stops-list"></div>
   </section>
 
-  <!-- Leaderboard -->
   <section class="card">
     <h2>Live Leaderboard</h2>
     <div style="overflow-x:auto">
@@ -146,7 +141,6 @@
     </div>
   </section>
 
-  <!-- Regeln -->
   <section class="card">
     <h2>Regelwerk</h2>
     <ul class="rules-list">
@@ -158,7 +152,6 @@
     </ul>
   </section>
 
-  <!-- Timer -->
   <section class="card timer">
     <h2>10-Sekunden Ex-Counter</h2>
     <div id="timer-display" class="timer-display">10.0</div>
@@ -168,7 +161,6 @@
     </div>
   </section>
 
-  <!-- Admin -->
   <section class="admin-panel">
     <h2>Admin-Steuerung</h2>
 
@@ -215,6 +207,7 @@
   </section>
 </main>
 
+<!-- ===== Original-Seitenlogik (ohne Storage) ===== -->
 <script>
   const tourConfig = {
     stops: [
@@ -228,35 +221,348 @@
       { name:"Extrablatt", lat:50.1198957, lon:8.6504733, drink:"Shot", par:1, address:"Bockenheimer Warte" },
       { name:"Doctor Flotte", lat:50.1204769, lon:8.65017, drink:"Bier / Appler / Wein", par:3, address:"Leipziger Str. 20" }
     ],
-    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta"], /* Echo entfernt */
+    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta"], <!-- Echo & Foxtrot entfernt -->
     adminPassword:"bockenheim",
     rules:[
       { text:"Getränk verschüttet", value:2 },
-      { text:"Hole-in-One (Exen)", value:-2 },
+      { text:"Hole-in-One (Exen)", value:-2 },  // << geändert
       { text:"Loch nicht beendet", value:3 },
       { text:"Partner-Regel missachtet", value:3 },
       { text:"Party-Hut abgenommen", value:1 }
     ]
   };
-  window.scores={}; window.currentStopIndex=-1;
-  document.addEventListener('DOMContentLoaded',()=>{initCountdown();initExCounter();initMap();initStopsList();initLeaderboard();initAdminPanel();});
-  /* … (hier bleibt der ganze JS-Code wie in deiner letzten Version, nur tourConfig.teams wurde reduziert) … */
+
+  // UI State (von Firestore kommend)
+  window.scores = {};           // { [team]: { holes:number[], penalty:number } }
+  window.currentStopIndex = -1; // nur Anzeige
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initCountdown(); initExCounter(); initMap(); initStopsList(); initLeaderboard(); initAdminPanel();
+  });
+
+  // ---- Karte / Route
+  let mapMarkers = [];
+  function initMap(){
+    const map = L.map('map').setView([50.123, 8.646], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    const route = tourConfig.stops.map(s=>[s.lat,s.lon]);
+    tourConfig.stops.forEach((stop,i)=>{
+      const hole=i+1;
+      const icon = L.divIcon({ html:`<div style="background-color: var(--primary-color); color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">${hole}</div>`, className:"", iconSize:[30,30], iconAnchor:[15,15] });
+      const m = L.marker([stop.lat, stop.lon], { icon }).addTo(map)
+        .bindPopup(`<b>Loch ${hole}: ${stop.name}</b><br>${stop.address}<br><i>Getränk: ${stop.drink}</i><br><b>Par: ${stop.par}</b>`);
+      mapMarkers.push(m);
+    });
+    L.polyline(route,{ color:'var(--primary-color)', weight:4, opacity:.8 }).addTo(map);
+  }
+
+  // ---- Stops-Liste
+  function initStopsList(){
+    const el=document.getElementById('stops-list'); el.innerHTML='';
+    tourConfig.stops.forEach((stop,i)=>{
+      const hole=i+1;
+      const div=document.createElement('div'); div.className='stop'; div.id=`stop-list-item-${i}`;
+      div.innerHTML=`<div class="stop-info"><div><h3>${hole}. ${stop.name}</h3><p class="drink">Getränk: ${stop.drink}</p></div><div class="par">${stop.par}<span>PAR</span></div></div>`;
+      el.appendChild(div);
+    });
+  }
+
+  // ---- Leaderboard (Header + Render)
+  function initLeaderboard(){
+    const thead=document.querySelector('#leaderboard thead tr');
+    thead.innerHTML='<th>Rang</th><th>Team</th>';
+    for(let i=1;i<=tourConfig.stops.length;i++){ const th=document.createElement('th'); th.textContent=String(i); thead.appendChild(th); }
+    thead.innerHTML += '<th>Strafen</th><th>Total</th>';
+  }
+  function updateLeaderboardView(){
+    const tbody=document.querySelector('#leaderboard tbody'); tbody.innerHTML='';
+
+    const rows = tourConfig.teams.map((team) => {
+      const teamData = (window.scores && window.scores[team]) || { holes:Array(tourConfig.stops.length).fill(0), penalty:0 };
+
+      let sumRel = 0;
+      const relPerHole = teamData.holes.map((raw, i) => {
+        const v = Number(raw) || 0;
+        if (v <= 0) return null; // nicht gewertet
+        const par2 = (tourConfig.stops[i]?.par || 0) * 2;
+        const rel = v - par2; // Abweichung ggü. PAR*2
+        sumRel += rel;
+        return rel;
+      });
+
+      const penalty = Number(teamData.penalty) || 0;
+      const total = sumRel + penalty;
+      return { name: team, relPerHole, penalty, total };
+    }).sort((a,b)=>a.total-b.total);
+
+    rows.forEach((row, rank) => {
+      const tr = document.createElement('tr');
+
+      const holesCells = row.relPerHole.map((rel) => {
+        if (rel === null) return `<td>-</td>`;
+        const cls = rel > 0 ? 'rel-pos' : (rel < 0 ? 'rel-neg' : 'rel-zero');
+        const txt = rel > 0 ? `+${rel}` : `${rel}`;
+        return `<td class="${cls}">${txt}</td>`;
+      }).join('');
+
+      tr.innerHTML = `
+        <td><b>${rank + 1}.</b></td>
+        <td class="team-name">${row.name}</td>
+        ${holesCells}
+        <td>${row.penalty}</td>
+        <td class="total">${row.total}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---- Aktuelle Challenge (nur Anzeige/Highlight)
+  function updateCurrentStopView(scrollIntoView){
+    const card=document.getElementById('current-challenge-card');
+    const content=document.getElementById('current-challenge-content');
+    const i=window.currentStopIndex;
+    if (i < 0 || i >= tourConfig.stops.length){
+      card.style.display='none';
+      document.querySelectorAll('.stop').forEach(el=>el.classList.remove('active'));
+      return;
+    }
+    const stop=tourConfig.stops[i]; const n=i+1;
+    content.innerHTML = `<h3>Loch ${n}: ${stop.name}</h3><p><strong>Getränk:</strong> ${stop.drink}</p><div class="par">${stop.par}<span>PAR</span></div>`;
+    card.style.display='block';
+
+    document.querySelectorAll('.stop').forEach(el=>el.classList.remove('active'));
+    const active=document.getElementById(`stop-list-item-${i}`); if(active){ active.classList.add('active'); if(scrollIntoView) active.scrollIntoView({behavior:'smooth',block:'center'}); }
+
+    // Marker highlighten
+    mapMarkers.forEach((m,idx)=>{
+      const size = idx===i ? 40 : 30, anchor = idx===i ? 20 : 15;
+      const html = `<div style="background-color:${idx===i?'var(--accent-color)':'var(--primary-color)'};color:${idx===i?'black':'white'};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:${idx===i?3:2}px solid white;">${idx+1}</div>`;
+      m.setIcon(L.divIcon({ html, className:'', iconSize:[size,size], iconAnchor:[anchor,anchor] }));
+    });
+  }
+
+  // ---- Countdown & Timer
+  function initCountdown(){
+    const now=new Date(); const saturday=new Date(now);
+    saturday.setDate(now.getDate()+((6-now.getDay()+7)%7)); saturday.setHours(21,0,0,0);
+    const target=saturday.getTime();
+    const iv=setInterval(()=>{
+      const d=target-Date.now(); if(d<0){ clearInterval(iv); document.getElementById('countdown-container').style.display='none'; document.getElementById('countdown-message').textContent='Die Bockenheim Open haben begonnen! Viel Erfolg!'; return; }
+      const dd=Math.floor(d/(1000*60*60*24));
+      const hh=Math.floor((d%(1000*60*60*24))/(1000*60*60));
+      const mm=Math.floor((d%(1000*60*60))/(1000*60));
+      const ss=Math.floor((d%(1000*60))/1000);
+      document.getElementById('days').textContent=dd;
+      document.getElementById('hours').textContent=hh;
+      document.getElementById('minutes').textContent=mm;
+      document.getElementById('seconds').textContent=ss;
+    },1000);
+  }
+  let exTimerInterval;
+  function initExCounter(){
+    const start=document.getElementById('timer-start');
+    const reset=document.getElementById('timer-reset');
+    const disp=document.getElementById('timer-display');
+    start.addEventListener('click', ()=>{
+      start.disabled=true; const end=Date.now()+10000;
+      exTimerInterval=setInterval(()=>{
+        const left=end-Date.now();
+        if (left<=0){ clearInterval(exTimerInterval); disp.textContent='0.0'; start.disabled=false; return; }
+        disp.textContent=(left/1000).toFixed(1);
+      },100);
+    });
+    reset.addEventListener('click', ()=>{ clearInterval(exTimerInterval); disp.textContent='10.0'; start.disabled=false; });
+  }
+
+  // ---- Admin-UI
+  function initAdminPanel(){
+    const tSel=document.getElementById('score-team-select');
+    const pSel=document.getElementById('penalty-team-select');
+    const hSel=document.getElementById('hole-select');
+    const cSel=document.getElementById('current-stop-select');
+    const rSel=document.getElementById('penalty-select');
+
+    [tSel,pSel,hSel,cSel,rSel].forEach(el=>el.innerHTML='');
+
+    tourConfig.teams.forEach(t=>{ tSel.appendChild(new Option(t,t)); pSel.appendChild(new Option(t,t)); });
+    tourConfig.stops.forEach((s,i)=>{ const o=new Option(`Loch ${i+1}: ${s.name}`, i); hSel.appendChild(o.cloneNode(true)); cSel.appendChild(o); });
+    tourConfig.rules.forEach(r=> rSel.appendChild(new Option(`${r.text} (${r.value>0?'+':''}${r.value})`, r.value)));
+  }
+
+  window.unlockAdmin = function(){
+    const pw=document.getElementById('admin-password').value;
+    if (pw===tourConfig.adminPassword){ document.getElementById('login-section').style.display='none'; document.getElementById('admin-content').style.display='block'; }
+    else alert('Falsches Passwort!');
+  };
 </script>
 
-<!-- Firebase Block bleibt unverändert, aber TEAMS jetzt = 4 -->
+<!-- ======================================================= -->
+<!-- Firebase + Firestore Integration -->
+<!-- ======================================================= -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  const firebaseConfig={/* deine config unverändert */};
-  const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
+  // Deine Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDX5k40Sh4PPIAB0AlaUOAO5w_J9kkTetU",
+    authDomain: "bockenheimopen.firebaseapp.com",
+    projectId: "bockenheimopen",
+    storageBucket: "bockenheimopen.firebasestorage.app",
+    messagingSenderId: "1041085407769",
+    appId: "1:1041085407769:web:4e69958e8adf684b10c088",
+    measurementId: "G-ZBHWE97Z0G"
+  };
 
-  const EVENT_ID="bockenheim-open-2025";
-  const HOLES=window.tourConfig?.stops?.length??9;
-  const TEAMS=(window.tourConfig?.teams??[]).slice(); // jetzt 4
+  // Init
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const auth = getAuth(app);
 
-  /* … restlicher Firebase-Sync Code wie zuvor … */
+  // --- App-spezifisch
+  const EVENT_ID = "bockenheim-open-2025";
+  const HOLES = window.tourConfig?.stops?.length ?? 9;
+  const TEAMS = (window.tourConfig?.teams ?? []).slice();
+  const teamsCol = collection(db, "events", EVENT_ID, "teams");
+  const eventDoc = doc(db, "events", EVENT_ID); // aktuell ausgewählter Stop
+  const holesArray = (n=HOLES) => Array(n).fill(0);
+
+  // =====️ Debug Helpers
+  const log = (...a) => console.log("[BO-Firestore]", ...a);
+  const err = (...a) => console.error("[BO-Firestore]", ...a);
+
+  // ===== Auth + Start
+  signInAnonymously(auth).catch(err);
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    log("angemeldet (anonymous):", user.uid);
+
+    await ensureEventDoc();     // überschreibt den Stop NICHT
+    await seedMissingTeams();   // ergänzt fehlende Teams (keine Löschung)
+    attachRealtime();
+  });
+
+  // sorgt dafür, dass das Event-Dokument existiert (ohne den Stop zu überschreiben)
+  async function ensureEventDoc(){
+    const snap = await getDoc(eventDoc);
+    if (!snap.exists()) {
+      await setDoc(eventDoc, { currentStopIndex: -1 });
+    }
+  }
+
+  // ergänzt alle fehlenden Teams; passt holes-Länge an HOLES an
+  async function seedMissingTeams(){
+    const snap = await getDocs(teamsCol);
+    const existing = new Set();
+    snap.forEach(d=>existing.add(d.id));
+    const ops = [];
+
+    TEAMS.forEach(name=>{
+      if(!existing.has(name)){
+        ops.push(setDoc(doc(db,"events",EVENT_ID,"teams",name), { name, holes:holesArray(), penalty:0 }, { merge:true }));
+      }
+    });
+
+    // padding für bereits existierende Teams
+    snap.forEach(d=>{
+      const data=d.data()||{};
+      const arr=Array.isArray(data.holes)? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0))) : holesArray();
+      ops.push(setDoc(d.ref, { holes:arr, penalty:Number.isFinite(data.penalty)?data.penalty:0, name:data.name||d.id }, { merge:true }));
+    });
+
+    if (ops.length) await Promise.all(ops);
+  }
+
+  // --- Realtime Attach ---
+  function attachRealtime(){
+    // TEAMS (Scores)
+    onSnapshot(teamsCol, (snap)=>{
+      log("Teams snapshot:", snap.size, "docs");
+      const next = {};
+      // standardmäßig alle Teams 0en; werden gleich überschrieben
+      TEAMS.forEach(t=> next[t]={ holes:holesArray(), penalty:0 });
+
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const name=data.name || d.id;
+        const holes = Array.isArray(data.holes)
+          ? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0)))
+          : holesArray();
+        const penalty = Number.isFinite(data.penalty) ? data.penalty : 0;
+        next[name] = { holes, penalty };
+      });
+
+      window.scores = next;
+      if (typeof window.updateLeaderboardView === "function") window.updateLeaderboardView();
+    }, err);
+
+    // aktueller Stop (nur Anzeige)
+    onSnapshot(eventDoc, (docSnap)=>{
+      const st=docSnap.data()||{ currentStopIndex:-1 };
+      window.currentStopIndex = Number.isFinite(st.currentStopIndex) ? st.currentStopIndex : -1;
+      log("State snapshot: currentStopIndex =", window.currentStopIndex);
+      if (typeof window.updateCurrentStopView === "function") window.updateCurrentStopView(false);
+      const sel=document.getElementById('current-stop-select'); if (sel) sel.value=String(window.currentStopIndex);
+    }, err);
+
+    // --- Schreibfunktionen (Admin-Buttons) ---
+    window.updateScore = async function(){
+      const team = document.getElementById("score-team-select").value;
+      const hole = parseInt(document.getElementById("hole-select").value,10);
+      const val  = parseInt(document.getElementById("score-input").value,10);
+      if(!team || isNaN(hole) || hole<0 || hole>=HOLES || isNaN(val) || val<0){ alert("Bitte gültige Zahl eingeben."); return; }
+
+      const ref = doc(db,"events",EVENT_ID,"teams",team);
+      const snap = await getDoc(ref);
+      const base = snap.exists()? snap.data() : { name:team, holes:holesArray(), penalty:0 };
+      const holes = Array.isArray(base.holes)? base.holes : holesArray();
+      holes[hole] = val;
+      await setDoc(ref, { name:team, holes, penalty:base.penalty||0 }, { merge:true });
+      document.getElementById("score-input").value = "";
+      log("Score gesetzt:", team, "Loch", hole+1, "=", val);
+    };
+
+    window.applyPenalty = async function(){
+      const team  = document.getElementById('penalty-team-select').value;
+      const delta = parseInt(document.getElementById('penalty-select').value,10);
+      if(!team || isNaN(delta)) return;
+      const ref = doc(db,"events",EVENT_ID,"teams",team);
+      const snap = await getDoc(ref);
+      const base = snap.exists()? snap.data() : { name:team, holes:holesArray(), penalty:0 };
+      await setDoc(ref, { name:team, holes:base.holes||holesArray(), penalty:(base.penalty||0)+delta }, { merge:true });
+      log("Penalty applied:", team, delta);
+    };
+
+    window.setCurrentStop = async function(){
+      const idx = parseInt(document.getElementById('current-stop-select').value,10);
+      if (isNaN(idx)) return;
+      await setDoc(eventDoc, { currentStopIndex: idx }, { merge:true });
+      log("Current stop gesetzt:", idx, "(nur Anzeige)");
+    };
+
+    window.requestFullReset = function(){
+      const reset=document.getElementById('reset-button'), cancel=document.getElementById('cancel-reset-button');
+      reset.textContent='SICHER? NOCHMAL KLICKEN ZUM LÖSCHEN!'; reset.classList.remove('danger-button'); reset.classList.add('confirm-button');
+      reset.setAttribute('onclick','executeFullReset()'); cancel.style.display='block';
+    };
+    window.cancelReset = function(){
+      const reset=document.getElementById('reset-button'), cancel=document.getElementById('cancel-reset-button');
+      reset.textContent='ALLES ZURÜCKSETZEN'; reset.classList.remove('confirm-button'); reset.classList.add('danger-button');
+      reset.setAttribute('onclick','requestFullReset()'); cancel.style.display='none';
+    };
+    window.executeFullReset = async function(){
+      if (!confirm("Wirklich ALLES zurücksetzen?")) return;
+      const snap = await getDocs(teamsCol);
+      const deletions=[]; snap.forEach(d=>deletions.push(deleteDoc(d.ref)));
+      await Promise.all(deletions);
+      await setDoc(eventDoc, { currentStopIndex:-1 }, { merge:true });
+      await seedMissingTeams();
+      alert("Zurückgesetzt.");
+      window.cancelReset?.();
+      log("Reset done.");
+    };
+  }
 </script>
 </body>
 </html>
