@@ -97,6 +97,7 @@
 </header>
 
 <main class="container">
+  <!-- Countdown -->
   <section class="card countdown">
     <h2>Tour Start</h2>
     <div id="countdown-container" class="countdown-container">
@@ -108,6 +109,7 @@
     <p id="countdown-message" style="font-weight:700;margin-top:8px;"></p>
   </section>
 
+  <!-- Aktuelle Challenge -->
   <section class="card" id="current-challenge-card">
     <h2>AKTUELLE CHALLENGE</h2>
     <div id="current-challenge-content">
@@ -115,16 +117,19 @@
     </div>
   </section>
 
+  <!-- Karte -->
   <section class="card">
     <h2>Die Route & Karte</h2>
     <div id="map"></div>
   </section>
 
+  <!-- Tour-Plan -->
   <section class="card">
     <h2>Die 9 Löcher (Tour-Plan)</h2>
     <div id="stops-list"></div>
   </section>
 
+  <!-- Leaderboard -->
   <section class="card">
     <h2>Live Leaderboard</h2>
     <div style="overflow-x:auto">
@@ -141,6 +146,7 @@
     </div>
   </section>
 
+  <!-- Regeln -->
   <section class="card">
     <h2>Regelwerk</h2>
     <ul class="rules-list">
@@ -152,6 +158,7 @@
     </ul>
   </section>
 
+  <!-- Timer -->
   <section class="card timer">
     <h2>10-Sekunden Ex-Counter</h2>
     <div id="timer-display" class="timer-display">10.0</div>
@@ -161,6 +168,7 @@
     </div>
   </section>
 
+  <!-- Admin -->
   <section class="admin-panel">
     <h2>Admin-Steuerung</h2>
 
@@ -200,6 +208,21 @@
 
       <hr style="margin:16px 0;border-color:#555">
 
+      <!-- 🔧 Team-Namen bearbeiten (NEU) -->
+      <h3>Team-Namen bearbeiten</h3>
+      <div id="team-name-editor">
+        <input type="text" id="team-name-0" placeholder="Team 1" />
+        <input type="text" id="team-name-1" placeholder="Team 2" />
+        <input type="text" id="team-name-2" placeholder="Team 3" />
+        <input type="text" id="team-name-3" placeholder="Team 4" />
+        <button id="save-team-names" onclick="saveTeamNames()">Namen speichern</button>
+        <p id="team-name-hint" style="font-size:.85rem;opacity:.85;margin-top:6px;">
+          Tipp: Namen müssen eindeutig sein. Beim Speichern werden vorhandene Scores automatisch mitumgezogen.
+        </p>
+      </div>
+
+      <hr style="margin:16px 0;border-color:#555">
+
       <h3>Gefahrenzone</h3>
       <button id="reset-button" class="danger-button" onclick="requestFullReset()">ALLES ZURÜCKSETZEN</button>
       <button id="cancel-reset-button" style="display:none;background:#555;color:#fff" onclick="cancelReset()">Abbrechen</button>
@@ -207,7 +230,6 @@
   </section>
 </main>
 
-<!-- ===== Original-Seitenlogik (ohne Storage) ===== -->
 <script>
   const tourConfig = {
     stops: [
@@ -221,27 +243,22 @@
       { name:"Extrablatt", lat:50.1198957, lon:8.6504733, drink:"Shot", par:1, address:"Bockenheimer Warte" },
       { name:"Doctor Flotte", lat:50.1204769, lon:8.65017, drink:"Bier / Appler / Wein", par:3, address:"Leipziger Str. 20" }
     ],
-    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta"], <!-- Echo & Foxtrot entfernt -->
+    teams:["Team Alpha","Team Bravo","Team Charlie","Team Delta"], // Startzustand (bearbeitbar im Admin)
     adminPassword:"bockenheim",
     rules:[
       { text:"Getränk verschüttet", value:2 },
-      { text:"Hole-in-One (Exen)", value:-2 },  // << geändert
+      { text:"Hole-in-One (Exen)", value:-2 },
       { text:"Loch nicht beendet", value:3 },
       { text:"Partner-Regel missachtet", value:3 },
       { text:"Party-Hut abgenommen", value:1 }
     ]
   };
 
-  // UI State (von Firestore kommend)
-  window.scores = {};           // { [team]: { holes:number[], penalty:number } }
-  window.currentStopIndex = -1; // nur Anzeige
+  window.scores={}; window.currentStopIndex=-1;
 
-  document.addEventListener('DOMContentLoaded', () => {
-    initCountdown(); initExCounter(); initMap(); initStopsList(); initLeaderboard(); initAdminPanel();
-  });
+  document.addEventListener('DOMContentLoaded',()=>{initCountdown();initExCounter();initMap();initStopsList();initLeaderboard();initAdminPanel();});
 
-  // ---- Karte / Route
-  let mapMarkers = [];
+  let mapMarkers=[];
   function initMap(){
     const map = L.map('map').setView([50.123, 8.646], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
@@ -256,7 +273,6 @@
     L.polyline(route,{ color:'var(--primary-color)', weight:4, opacity:.8 }).addTo(map);
   }
 
-  // ---- Stops-Liste
   function initStopsList(){
     const el=document.getElementById('stops-list'); el.innerHTML='';
     tourConfig.stops.forEach((stop,i)=>{
@@ -267,17 +283,20 @@
     });
   }
 
-  // ---- Leaderboard (Header + Render)
   function initLeaderboard(){
     const thead=document.querySelector('#leaderboard thead tr');
     thead.innerHTML='<th>Rang</th><th>Team</th>';
     for(let i=1;i<=tourConfig.stops.length;i++){ const th=document.createElement('th'); th.textContent=String(i); thead.appendChild(th); }
     thead.innerHTML += '<th>Strafen</th><th>Total</th>';
   }
+
   function updateLeaderboardView(){
     const tbody=document.querySelector('#leaderboard tbody'); tbody.innerHTML='';
 
-    const rows = tourConfig.teams.map((team) => {
+    // Wir verwenden die dynamische TEAM_LIST (wird unten im Firebase-Block gepflegt)
+    const teamsToShow = (window.TEAM_LIST && window.TEAM_LIST.length) ? window.TEAM_LIST : tourConfig.teams;
+
+    const rows = teamsToShow.map((team) => {
       const teamData = (window.scores && window.scores[team]) || { holes:Array(tourConfig.stops.length).fill(0), penalty:0 };
 
       let sumRel = 0;
@@ -316,7 +335,6 @@
     });
   }
 
-  // ---- Aktuelle Challenge (nur Anzeige/Highlight)
   function updateCurrentStopView(scrollIntoView){
     const card=document.getElementById('current-challenge-card');
     const content=document.getElementById('current-challenge-content');
@@ -333,7 +351,6 @@
     document.querySelectorAll('.stop').forEach(el=>el.classList.remove('active'));
     const active=document.getElementById(`stop-list-item-${i}`); if(active){ active.classList.add('active'); if(scrollIntoView) active.scrollIntoView({behavior:'smooth',block:'center'}); }
 
-    // Marker highlighten
     mapMarkers.forEach((m,idx)=>{
       const size = idx===i ? 40 : 30, anchor = idx===i ? 20 : 15;
       const html = `<div style="background-color:${idx===i?'var(--accent-color)':'var(--primary-color)'};color:${idx===i?'black':'white'};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:${idx===i?3:2}px solid white;">${idx+1}</div>`;
@@ -341,7 +358,6 @@
     });
   }
 
-  // ---- Countdown & Timer
   function initCountdown(){
     const now=new Date(); const saturday=new Date(now);
     saturday.setDate(now.getDate()+((6-now.getDay()+7)%7)); saturday.setHours(21,0,0,0);
@@ -374,7 +390,6 @@
     reset.addEventListener('click', ()=>{ clearInterval(exTimerInterval); disp.textContent='10.0'; start.disabled=false; });
   }
 
-  // ---- Admin-UI
   function initAdminPanel(){
     const tSel=document.getElementById('score-team-select');
     const pSel=document.getElementById('penalty-team-select');
@@ -384,9 +399,15 @@
 
     [tSel,pSel,hSel,cSel,rSel].forEach(el=>el.innerHTML='');
 
-    tourConfig.teams.forEach(t=>{ tSel.appendChild(new Option(t,t)); pSel.appendChild(new Option(t,t)); });
+    const list = (window.TEAM_LIST && window.TEAM_LIST.length) ? window.TEAM_LIST : tourConfig.teams;
+
+    list.forEach(t=>{ tSel.appendChild(new Option(t,t)); pSel.appendChild(new Option(t,t)); });
     tourConfig.stops.forEach((s,i)=>{ const o=new Option(`Loch ${i+1}: ${s.name}`, i); hSel.appendChild(o.cloneNode(true)); cSel.appendChild(o); });
     tourConfig.rules.forEach(r=> rSel.appendChild(new Option(`${r.text} (${r.value>0?'+':''}${r.value})`, r.value)));
+
+    // Team-Name Editor befüllen
+    const inputs=[0,1,2,3].map(i=>document.getElementById(`team-name-${i}`));
+    for(let i=0;i<inputs.length;i++){ inputs[i].value = list[i] || `Team ${i+1}`; }
   }
 
   window.unlockAdmin = function(){
@@ -396,15 +417,12 @@
   };
 </script>
 
-<!-- ======================================================= -->
-<!-- Firebase + Firestore Integration -->
-<!-- ======================================================= -->
+<!-- ===== Firebase + Firestore (Realtime + Team-Name-Editor) ===== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-  // Deine Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyDX5k40Sh4PPIAB0AlaUOAO5w_J9kkTetU",
     authDomain: "bockenheimopen.firebaseapp.com",
@@ -415,77 +433,85 @@
     measurementId: "G-ZBHWE97Z0G"
   };
 
-  // Init
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
   const auth = getAuth(app);
 
-  // --- App-spezifisch
   const EVENT_ID = "bockenheim-open-2025";
   const HOLES = window.tourConfig?.stops?.length ?? 9;
-  const TEAMS = (window.tourConfig?.teams ?? []).slice();
+  // dynamische Teamliste (wird von Firestore geladen/überschrieben)
+  window.TEAM_LIST = (window.tourConfig?.teams ?? []).slice();
+
   const teamsCol = collection(db, "events", EVENT_ID, "teams");
-  const eventDoc = doc(db, "events", EVENT_ID); // aktuell ausgewählter Stop
+  const eventDoc = doc(db, "events", EVENT_ID);
   const holesArray = (n=HOLES) => Array(n).fill(0);
 
-  // =====️ Debug Helpers
-  const log = (...a) => console.log("[BO-Firestore]", ...a);
-  const err = (...a) => console.error("[BO-Firestore]", ...a);
+  const log=(...a)=>console.log("[BO-Firestore]",...a);
+  const err=(...a)=>console.error("[BO-Firestore]",...a);
 
-  // ===== Auth + Start
   signInAnonymously(auth).catch(err);
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user) return;
     log("angemeldet (anonymous):", user.uid);
-
-    await ensureEventDoc();     // überschreibt den Stop NICHT
-    await seedMissingTeams();   // ergänzt fehlende Teams (keine Löschung)
+    await ensureEventDoc();
+    await loadTeamNamesFromEvent();  // TEAM_LIST aus Firestore ziehen oder initial schreiben
+    await syncTeamsToList();         // sicherstellen, dass alle TEAM_LIST-Dokumente existieren / gepaddet sind
     attachRealtime();
   });
 
-  // sorgt dafür, dass das Event-Dokument existiert (ohne den Stop zu überschreiben)
   async function ensureEventDoc(){
     const snap = await getDoc(eventDoc);
     if (!snap.exists()) {
-      await setDoc(eventDoc, { currentStopIndex: -1 });
+      await setDoc(eventDoc, { currentStopIndex: -1, teamNames: window.TEAM_LIST });
     }
   }
 
-  // ergänzt alle fehlenden Teams; passt holes-Länge an HOLES an
-  async function seedMissingTeams(){
-    const snap = await getDocs(teamsCol);
-    const existing = new Set();
-    snap.forEach(d=>existing.add(d.id));
-    const ops = [];
-
-    TEAMS.forEach(name=>{
-      if(!existing.has(name)){
-        ops.push(setDoc(doc(db,"events",EVENT_ID,"teams",name), { name, holes:holesArray(), penalty:0 }, { merge:true }));
-      }
-    });
-
-    // padding für bereits existierende Teams
-    snap.forEach(d=>{
-      const data=d.data()||{};
-      const arr=Array.isArray(data.holes)? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0))) : holesArray();
-      ops.push(setDoc(d.ref, { holes:arr, penalty:Number.isFinite(data.penalty)?data.penalty:0, name:data.name||d.id }, { merge:true }));
-    });
-
-    if (ops.length) await Promise.all(ops);
+  async function loadTeamNamesFromEvent(){
+    const snap = await getDoc(eventDoc);
+    const data = snap.data()||{};
+    if (Array.isArray(data.teamNames) && data.teamNames.length){
+      window.TEAM_LIST = data.teamNames.slice(0,4); // 4 Teams
+    } else {
+      // initial schreiben
+      await setDoc(eventDoc, { teamNames: window.TEAM_LIST }, { merge:true });
+    }
+    // Admin-Panel Selects + Inputs aktualisieren
+    if (typeof initAdminPanel === "function") initAdminPanel();
   }
 
-  // --- Realtime Attach ---
+  async function syncTeamsToList(){
+    const snap = await getDocs(teamsCol);
+    const inDb = new Map();
+    snap.forEach(d=>inDb.set(d.id, d.ref));
+    const ops = [];
+
+    // fehlende anlegen & vorhandene auf HOLES-Länge padden
+    for (const name of window.TEAM_LIST){
+      if (!inDb.has(name)){
+        ops.push(setDoc(doc(db,"events",EVENT_ID,"teams",name), { name, holes:holesArray(), penalty:0 }, { merge:true }));
+      } else {
+        const r=inDb.get(name);
+        const ds=await getDoc(r);
+        const data=ds.data()||{};
+        const arr=Array.isArray(data.holes)? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0))) : holesArray();
+        ops.push(setDoc(r, { holes:arr, penalty:Number.isFinite(data.penalty)?data.penalty:0, name:data.name||name }, { merge:true }));
+      }
+    }
+
+    await Promise.all(ops);
+  }
+
   function attachRealtime(){
-    // TEAMS (Scores)
+    // Teams -> Scores in UI
     onSnapshot(teamsCol, (snap)=>{
-      log("Teams snapshot:", snap.size, "docs");
       const next = {};
-      // standardmäßig alle Teams 0en; werden gleich überschrieben
-      TEAMS.forEach(t=> next[t]={ holes:holesArray(), penalty:0 });
+      // default: 0en
+      window.TEAM_LIST.forEach(t=> next[t]={ holes:holesArray(), penalty:0 });
 
       snap.forEach(d=>{
         const data=d.data()||{};
-        const name=data.name || d.id;
+        const name=d.id; // Dokument-ID als Team-Name (stabil)
+        if (!window.TEAM_LIST.includes(name)) return;
         const holes = Array.isArray(data.holes)
           ? data.holes.slice(0,HOLES).concat(holesArray(HOLES-(data.holes?.length||0)))
           : holesArray();
@@ -495,24 +521,28 @@
 
       window.scores = next;
       if (typeof window.updateLeaderboardView === "function") window.updateLeaderboardView();
+      // Admin-Selects neu aufbauen (falls Namen geändert wurden)
+      if (typeof initAdminPanel === "function") initAdminPanel();
     }, err);
 
-    // aktueller Stop (nur Anzeige)
+    // aktueller Stop
     onSnapshot(eventDoc, (docSnap)=>{
       const st=docSnap.data()||{ currentStopIndex:-1 };
       window.currentStopIndex = Number.isFinite(st.currentStopIndex) ? st.currentStopIndex : -1;
-      log("State snapshot: currentStopIndex =", window.currentStopIndex);
+      if (Array.isArray(st.teamNames) && st.teamNames.length){
+        window.TEAM_LIST = st.teamNames.slice(0,4);
+      }
       if (typeof window.updateCurrentStopView === "function") window.updateCurrentStopView(false);
       const sel=document.getElementById('current-stop-select'); if (sel) sel.value=String(window.currentStopIndex);
+      if (typeof initAdminPanel === "function") initAdminPanel();
     }, err);
 
-    // --- Schreibfunktionen (Admin-Buttons) ---
+    // Admin-Aktionen
     window.updateScore = async function(){
       const team = document.getElementById("score-team-select").value;
       const hole = parseInt(document.getElementById("hole-select").value,10);
       const val  = parseInt(document.getElementById("score-input").value,10);
       if(!team || isNaN(hole) || hole<0 || hole>=HOLES || isNaN(val) || val<0){ alert("Bitte gültige Zahl eingeben."); return; }
-
       const ref = doc(db,"events",EVENT_ID,"teams",team);
       const snap = await getDoc(ref);
       const base = snap.exists()? snap.data() : { name:team, holes:holesArray(), penalty:0 };
@@ -520,7 +550,6 @@
       holes[hole] = val;
       await setDoc(ref, { name:team, holes, penalty:base.penalty||0 }, { merge:true });
       document.getElementById("score-input").value = "";
-      log("Score gesetzt:", team, "Loch", hole+1, "=", val);
     };
 
     window.applyPenalty = async function(){
@@ -531,14 +560,12 @@
       const snap = await getDoc(ref);
       const base = snap.exists()? snap.data() : { name:team, holes:holesArray(), penalty:0 };
       await setDoc(ref, { name:team, holes:base.holes||holesArray(), penalty:(base.penalty||0)+delta }, { merge:true });
-      log("Penalty applied:", team, delta);
     };
 
     window.setCurrentStop = async function(){
       const idx = parseInt(document.getElementById('current-stop-select').value,10);
       if (isNaN(idx)) return;
       await setDoc(eventDoc, { currentStopIndex: idx }, { merge:true });
-      log("Current stop gesetzt:", idx, "(nur Anzeige)");
     };
 
     window.requestFullReset = function(){
@@ -556,11 +583,80 @@
       const snap = await getDocs(teamsCol);
       const deletions=[]; snap.forEach(d=>deletions.push(deleteDoc(d.ref)));
       await Promise.all(deletions);
-      await setDoc(eventDoc, { currentStopIndex:-1 }, { merge:true });
-      await seedMissingTeams();
+      await setDoc(eventDoc, { currentStopIndex:-1, teamNames: window.TEAM_LIST }, { merge:true });
+      await syncTeamsToList();
       alert("Zurückgesetzt.");
       window.cancelReset?.();
-      log("Reset done.");
+    };
+
+    // 🔧 Team-Namen speichern (mit Score-Migration)
+    window.saveTeamNames = async function(){
+      const inputs=[0,1,2,3].map(i=>document.getElementById(`team-name-${i}`));
+      const proposed = inputs.map(i => (i.value||"").trim()).map(s=>s.replace(/\s+/g,' ').trim());
+
+      // Validierung
+      if (proposed.some(n => !n)){
+        alert("Bitte alle vier Teamnamen ausfüllen.");
+        return;
+      }
+      const unique = new Set(proposed.map(n=>n.toLowerCase()));
+      if (unique.size !== proposed.length){
+        alert("Teamnamen müssen eindeutig sein.");
+        return;
+      }
+
+      const oldList = window.TEAM_LIST.slice();
+      const newList = proposed;
+
+      // nichts geändert?
+      if (oldList.join('|') === newList.join('|')){
+        alert("Keine Änderungen erkannt.");
+        return;
+      }
+
+      // vorhandene Dokumente prüfen
+      const existingSnap = await getDocs(teamsCol);
+      const existingIds = new Set(); existingSnap.forEach(d=>existingIds.add(d.id));
+
+      // Konfliktcheck: Wenn newName bereits als Doc existiert, aber nicht aus einer 1:1-Umbenennung stammt
+      for (const name of newList){
+        if (existingIds.has(name) && !oldList.includes(name)){
+          alert(`Der Name "${name}" existiert bereits als Team-Dokument. Bitte wähle einen anderen Namen oder benenne zuerst dieses Team um.`);
+          return;
+        }
+      }
+
+      // Migration nacheinander
+      for (let i=0;i<oldList.length;i++){
+        const oldName = oldList[i];
+        const newName = newList[i];
+        if (oldName === newName) continue;
+
+        const oldRef = doc(db,"events",EVENT_ID,"teams",oldName);
+        const newRef = doc(db,"events",EVENT_ID,"teams",newName);
+
+        const oldSnap = await getDoc(oldRef);
+        const oldData = oldSnap.exists() ? oldSnap.data() : { holes:holesArray(), penalty:0 };
+        // Schreiben neues Doc (überschreibt/merge)
+        await setDoc(newRef, { name:newName, holes:Array.isArray(oldData.holes)?oldData.holes:holesArray(), penalty:Number.isFinite(oldData.penalty)?oldData.penalty:0 }, { merge:true });
+        // Altes löschen (erst nach Erfolg)
+        if (oldSnap.exists()){
+          await deleteDoc(oldRef);
+        }
+      }
+
+      // neue Reihenfolge & Namen im EventDoc speichern
+      await setDoc(eventDoc, { teamNames: newList }, { merge:true });
+      window.TEAM_LIST = newList.slice();
+
+      // sicherstellen, dass Scores-Struktur passt
+      await syncTeamsToList();
+
+      // UI aktualisieren
+      if (typeof initAdminPanel === "function") initAdminPanel();
+      if (typeof updateLeaderboardView === "function") updateLeaderboardView();
+
+      alert("Teamnamen gespeichert!");
     };
   }
 </script>
