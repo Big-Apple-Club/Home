@@ -271,6 +271,17 @@
       mapMarkers.push(m);
     });
     L.polyline(route,{ color:'var(--primary-color)', weight:4, opacity:.8 }).addTo(map);
+
+    /* 🪦 Grabstein-Emoji Marker (nur Anzeige) */
+    const tombIcon = L.divIcon({
+      html: `<div style="font-size:28px; line-height:28px;">🪦</div>`,
+      className: "",
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    L.marker([50.124501, 8.642075], { icon: tombIcon, zIndexOffset: 1000 }).addTo(map).bindPopup("🪦 Spot 1");
+    L.marker([50.119853, 8.645073], { icon: tombIcon, zIndexOffset: 1000 }).addTo(map).bindPopup("🪦 Spot 2");
+    L.marker([50.120368, 8.650175], { icon: tombIcon, zIndexOffset: 1000 }).addTo(map).bindPopup("🪦 Spot 3");
   }
 
   function initStopsList(){
