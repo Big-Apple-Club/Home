@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAC TRAVEL | Ibiza & Mallorca 2026</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #ffffff;
+            --bg-light: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #6b7280;
+            --primary: #111827; 
+            --accent: #d4af37;
+            --border: #e5e7eb;
+            --shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --nav-height: 70px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); line-height: 1.6; }
+
+        h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; color: var(--primary); }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+        
+        .container { width: 90%; max-width: 1100px; margin: 0 auto; }
+        .section-padding { padding: 80px 0; }
+
+        /* Buttons */
+        .btn {
+            display: inline-block; padding: 14px 32px; background: var(--primary); color: white;
+            font-weight: 600; border-radius: 50px; border: 2px solid var(--primary); cursor: pointer;
+        }
+        .btn:hover { background: transparent; color: var(--primary); }
+
+        .btn-link {
+            display: inline-block; padding: 8px 16px; margin-top: 10px; font-size: 0.85rem;
+            border: 1px solid var(--border); border-radius: 30px; color: var(--text-main); font-weight: 600;
+        }
+        .btn-link:hover { border-color: var(--accent); color: var(--accent); }
+
+        .badge {
+            display: inline-block; padding: 4px 12px; background: var(--accent); color: white;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 4px; margin-bottom: 10px;
+        }
+
+        nav {
+            position: fixed; top: 0; width: 100%; height: var(--nav-height); background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+        }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; width: 90%; max-width: 1100px; margin: 0 auto; }
+        .nav-links { display: flex; gap: 25px; }
+        .nav-links a:hover { color: var(--accent); }
+        @media (max-width: 768px) { .nav-links { display: none; } }
+
+        #hero {
+            height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.4)), url('https://images.pexels.com/photos/23938784/pexels-photo-23938784.jpeg');
+            background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center; text-align: center; color: white;
+        }
+        #hero h1 { font-size: 3.5rem; color: white; margin-bottom: 10px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+        .card { background: var(--bg-card); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        
+        /* Tabs */
+        .tab-controls { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; }
+        .tab-btn { background: var(--bg-light); border: none; padding: 12px 30px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .price-tag { font-weight: 700; color: var(--primary); }
+        .sub-label { font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 4px; }
+        
+        /* Calculation & Slider */
+        .calculation-box { background: #fdfdfd; border: 1px solid var(--accent); padding: 25px; border-radius: var(--radius); }
+        .calc-total { font-size: 2.5rem; font-weight: 700; color: var(--primary); margin: 10px 0; }
+        
+        .slider-section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #eee; }
+        input[type=range] {
+            width: 100%; -webkit-appearance: none; background: transparent; margin: 15px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -10px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #ddd; border-radius: 2px;
+        }
+        .grand-total-box {
+            background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;
+        }
+        
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        footer { background: var(--primary); color: white; text-align: center; padding: 40px 0; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <div class="logo">BAC TRAVEL</div>
+            <div class="nav-links">
+                <a href="#start">Start</a>
+                <a href="#ibiza-2026">Trip Details</a>
+                <a href="#kosten">Kalkulation</a>
+                <a href="#kontakt">Kontakt</a>
+            </div>
+        </div>
+    </nav>
+
+    <header id="start">
+        <div id="hero">
+            <div class="container">
+                <h1>BAC TRAVEL</h1>
+                <p style="font-size: 1.2rem; margin-bottom: 30px;">Ibiza & Mallorca Combined • Oktober 2026</p>
+                <a href="#ibiza-2026" class="btn" style="background:white; color:var(--primary); border-color:white;">Zum Trip</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="ibiza-2026" class="section-padding" style="background-color: var(--bg-light);">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2>Der Plan: Ibiza & Mallorca</h2>
+                <p>Kombireise für 8 Personen</p>
+            </div>
+
+            <div class="tab-controls">
+                <button class="tab-btn active" onclick="switchTab('okt')">02.–10. Oktober</button>
+                <button class="tab-btn" onclick="switchTab('sept')">September (Alternativ)</button>
+            </div>
+
+            <div id="content-okt" class="fade-in">
+                
+                <div style="margin-bottom: 50px;">
+                    <h3>1. Flüge (Gabelflug & Hopping)</h3>
+                    <div class="grid-3">
+                        <div class="card">
+                            <h4>Hinflug</h4>
+                            <div class="detail-row">
+                                <span>FRA → IBZ</span>
+                                <span class="price-tag">~ 320 €</span>
+                            </div>
+                            <span class="sub-label">Oktober</span>
+                        </div>
+                        <div class="card">
+                            <h4>Insel-Hopping</h4>
+                            <div class="detail-row">
+                                <span>IBZ → Mallorca</span>
+                                <span class="price-tag">~ 74 €</span>
+                            </div>
+                            <span class="sub-label">Flug (kurz)</span>
+                        </div>
+                        <div class="card">
+                            <h4>Rückflug</h4>
+                            <div class="detail-row">
+                                <span>Mallorca → FRA</span>
+                                <span class="price-tag">~ 200–250 €</span>
+                            </div>
+                            <span class="sub-label">Rückreise</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 50px;">
+                    <h3>2. Unterkunft (Split Stay)</h3>
+                    <div class="grid-2">
+                        <div class="card">
+                            <span class="badge">Teil 1: 02.–04. Okt (2 Nächte)</span>
+                            <h4 style="margin-top:10px;">NYX Hotel Ibiza (Adults Only)</h4>
+                            <p class="sub-label">San Antonio Bucht</p>
+                            <img src="https://media.leonardo-hotels.com/static.leonardo-hotels.com/image/nyxhotelibiza_sunsetbar_2024-2_dcbe9c28d397ad2a02e400d937755470.jpg?width=1440" style="width:100%; height:150px; object-fit:cover; border-radius:8px; margin:15px 0;">
+                            
+                            <ul style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
+                                <li>• 3 Zimmer (1x Doppel, 2x Dreier)</li>
+                                <li>• Inkl. Frühstück & Stadtsteuer</li>
+                                <li>• Kostenfrei stornierbar bis 01. Okt</li>
+                            </ul>
+
+                            <div class="detail-row" style="border-top: 1px solid #eee;">
+                                <span>Gesamt (8 Pers.)</span>
+                                <span class="price-tag">1.486,80 €</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Pro Person</span>
+                                <span class="price-tag">~ 186 €</span>
+                            </div>
+                            <a href="https://www.leonardo-hotels.de/ibiza/nyx-hotel-ibiza-adults-only" target="_blank" class="btn-link">Zur Website ↗</a>
+                        </div>
+
+                        <div class="card">
+                            <span class="badge" style="background:#111;">Teil 2: 04.–10. Okt (6 Nächte)</span>
+                            <h4 style="margin-top:10px;">Villa mit Pool</h4>
+                            <p class="sub-label">Mallorca</p>
+                            <img src="https://a0.muscache.com/im/pictures/32178ac1-58bf-47a3-bacd-6bdc3054908f.jpg?im_w=1200" style="width:100%; height:150px; object-fit:cover; border-radius:8px; margin:15px 0;">
+                            
+                            <ul style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
+                                <li>• Private Villa</li>
+                                <li>• Eigener Pool</li>
+                                <li>• Viel Platz für die Gruppe</li>
+                            </ul>
+
+                            <div class="detail-row" style="border-top: 1px solid #eee;">
+                                <span>Gesamt (8 Pers.)</span>
+                                <span class="price-tag">~ 3.200,00 €</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Pro Person</span>
+                                <span class="price-tag">~ 400 €</span>
+                            </div>
+                            <a href="https://www.airbnb.de/rooms/44467317?check_in=2026-10-04&check_out=2026-10-10&guests=8&adults=8&s=67&unique_share_id=46916cf8-96b7-4a4e-b553-1a445865abf9" target="_blank" class="btn-link">Zu Airbnb ↗</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 50px;">
+                    <h3>3. Mietwagen (Mallorca)</h3>
+                    <div class="card">
+                        <div class="grid-2" style="gap: 40px;">
+                            <div>
+                                <h4>Option A: 2x Mietwagen</h4>
+                                <p class="sub-label">Flexibler, 2 Fahrer nötig</p>
+                                <div class="detail-row">
+                                    <span>Preis für 6 Tage</span>
+                                    <span class="price-tag">~ 600 € (Total)</span>
+                                </div>
+                                <p style="font-size:0.9rem; margin-top:5px;">(ca. 300 € pro Auto)</p>
+                            </div>
+                            <div>
+                                <h4>Option B: 1x Van (9-Sitzer)</h4>
+                                <p class="sub-label">Alle in einem Auto</p>
+                                <div class="detail-row">
+                                    <span>Preis für 6 Tage</span>
+                                    <span class="price-tag">~ 600 € (Total)</span>
+                                </div>
+                                <p style="font-size:0.9rem; margin-top:5px;">(Preisrahmen 500-600 €)</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; padding-top:15px; border-top:1px solid #eee; text-align:center;">
+                            <strong>Kosten p.P. für Auto: ~ 75 €</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="kosten">
+                    <h2 style="text-align: center; margin-bottom: 30px;">Gesamtkalkulation (Oktober)</h2>
+                    <div class="card calculation-box" style="text-align:center; max-width:600px; margin:0 auto;">
+                        <span class="badge">Fixkosten pro Person</span>
+                        <div class="calc-total">~ 1.280 €</div>
+                        <p class="sub-label">Flüge + Hotels + Auto (Fix)</p>
+                        
+                        <div style="margin-top: 30px; text-align: left;">
+                            <div class="detail-row">
+                                <span>1. Flüge (3 Strecken)</span>
+                                <strong>~ 619,00 €</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>2. Hotel Ibiza (2 Nächte)</span>
+                                <strong>~ 186,00 €</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>3. Villa Mallorca (6 Nächte)</span>
+                                <strong>~ 400,00 €</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>4. Mietwagen (Anteil)</span>
+                                <strong>~ 75,00 €</strong>
+                            </div>
+                        </div>
+
+                        <div class="slider-section">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <label for="budget-slider" style="font-weight:600;">Variable Kosten (Schätzwert):</label>
+                                <span id="var-display" style="font-weight:700; color:var(--accent);">600 €</span>
+                            </div>
+                            <p style="text-align:left; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Essen, Drinks, Clubs, Sprit</p>
+                            
+                            <input type="range" id="budget-slider" min="0" max="1500" step="50" value="600">
+                            
+                            <div class="grand-total-box">
+                                <div style="font-size:0.9rem; opacity:0.9;">GESAMT PRO PERSON</div>
+                                <div id="total-display" style="font-size:2rem; font-weight:700;">~ 1.880 €</div>
+                                <div style="font-size:0.8rem; opacity:0.8;">(Fix 1.280 € + Variabel <span id="var-display-small">600</span> €)</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div> 
+            
+            <div id="content-sept" class="hidden fade-in">
+                <div style="text-align:center; padding: 60px;">
+                    <h3>Daten für September folgen...</h3>
+                    <p>Sobald die Werte da sind, werden sie hier eingepflegt.</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="kontakt" class="section-padding" style="background: white;">
+        <div class="container" style="text-align: center;">
+            <h2>Bist du dabei oder raus?</h2>
+            <p style="margin-bottom: 30px;">Das Budget ist geplant. Jetzt zählt's.</p>
+            <a href="mailto:crew@big-apple-club.com?subject=FUCK%20IT%20LETS%20GO" class="btn">FUCK IT LETS GO!</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 BAC TRAVEL</p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Switcher Logic
+        function switchTab(period) {
+            const btnOkt = document.querySelectorAll('.tab-btn')[0];
+            const btnSept = document.querySelectorAll('.tab-btn')[1];
+            const contentOkt = document.getElementById('content-okt');
+            const contentSept = document.getElementById('content-sept');
+
+            if (period === 'okt') {
+                btnOkt.classList.add('active');
+                btnSept.classList.remove('active');
+                contentOkt.classList.remove('hidden');
+                contentSept.classList.add('hidden');
+            } else {
+                btnSept.classList.add('active');
+                btnOkt.classList.remove('active');
+                contentSept.classList.remove('hidden');
+                contentOkt.classList.add('hidden');
+            }
+        }
+
+        // Budget Calculator Logic
+        const slider = document.getElementById('budget-slider');
+        const varDisplay = document.getElementById('var-display');
+        const varDisplaySmall = document.getElementById('var-display-small');
+        const totalDisplay = document.getElementById('total-display');
+        const fixedCost = 1280; // Summe der Fixkosten aus dem HTML
+
+        slider.addEventListener('input', function() {
+            const variableCost = parseInt(this.value);
+            const total = fixedCost + variableCost;
+            
+            // Update Text
+            varDisplay.innerText = variableCost + " €";
+            varDisplaySmall.innerText = variableCost;
+            totalDisplay.innerText = "~ " + total.toLocaleString('de-DE') + " €";
+        });
+    </script>
+</body>
+</html>
