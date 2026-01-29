@@ -8,6 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
@@ -32,7 +36,7 @@
         a { text-decoration: none; color: inherit; transition: 0.3s; }
         ul { list-style: none; }
         
-        .container { width: 90%; max-width: 1100px; margin: 0 auto; }
+        .container { width: 90%; max-width: 1100px; margin: 0 auto; padding: 0 20px; }
         .section-padding { padding: 80px 0; }
 
         /* Buttons */
@@ -44,7 +48,7 @@
 
         .btn-link {
             display: inline-block; padding: 8px 16px; margin-top: 10px; font-size: 0.85rem;
-            border: 1px solid var(--border); border-radius: 30px; color: var(--text-main); font-weight: 600;
+            border: 1px solid var(--border); border-radius: 30px; color: var(--text-main); font-weight: 600; text-align: center;
         }
         .btn-link:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -53,6 +57,7 @@
             font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-radius: 4px; margin-bottom: 10px;
         }
 
+        /* Nav */
         nav {
             position: fixed; top: 0; width: 100%; height: var(--nav-height); background: rgba(255,255,255,0.95);
             backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid var(--border); display: flex; align-items: center;
@@ -62,6 +67,7 @@
         .nav-links a:hover { color: var(--accent); }
         @media (max-width: 768px) { .nav-links { display: none; } }
 
+        /* Hero */
         #hero {
             height: 100vh;
             background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.4)), url('https://images.pexels.com/photos/23938784/pexels-photo-23938784.jpeg');
@@ -70,10 +76,10 @@
         }
         #hero h1 { font-size: 3.5rem; color: white; margin-bottom: 10px; }
 
+        /* Cards */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
-
         .card { background: var(--bg-card); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         
         /* Tabs */
@@ -88,21 +94,50 @@
         /* Calculation & Slider */
         .calculation-box { background: #fdfdfd; border: 1px solid var(--accent); padding: 25px; border-radius: var(--radius); }
         .calc-total { font-size: 2.5rem; font-weight: 700; color: var(--primary); margin: 10px 0; }
+        .grand-total-box { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center; }
+        input[type=range] { width: 100%; margin: 15px 0; cursor: pointer; }
+
+        /* --- MAP STYLING (Optimiert) --- */
+        #bac-map {
+            width: 100%;
+            height: 600px; /* Etwas höher für bessere Übersicht */
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            z-index: 1;
+        }
+
+        .map-panel {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .chip {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px; border-radius: 50px;
+            background: white; border: 1px solid var(--border);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: 0.2s; cursor: pointer;
+        }
+        .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+        .chip label { cursor: pointer; user-select: none; font-size: 0.9rem; font-weight: 500; color: var(--text-main); }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        /* Marker Colors matched to luxury theme slightly */
+        .dot-stay { background: #0ea5b7; }     /* Türkis (Hotel) */
+        .dot-ibiza { background: #9333ea; }    /* Lila (Ibiza) */
+        .dot-mallorca { background: #ea580c; } /* Orange (Mallorca) */
+
+        .map-note {
+            text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 15px;
+        }
         
-        .slider-section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #eee; }
-        input[type=range] {
-            width: 100%; -webkit-appearance: none; background: transparent; margin: 15px 0;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -10px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer; background: #ddd; border-radius: 2px;
-        }
-        .grand-total-box {
-            background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;
-        }
-        
+        /* Leaflet Popup Customization */
+        .leaflet-popup-content-wrapper { border-radius: 8px; font-family: 'Inter', sans-serif; }
+        .leaflet-popup-content { margin: 15px; }
+
         .hidden { display: none; }
         .fade-in { animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -119,6 +154,7 @@
                 <a href="#start">Start</a>
                 <a href="#ibiza-2026">Trip Details</a>
                 <a href="#kosten">Kalkulation</a>
+                <a href="#map-section">Karte</a>
                 <a href="#kontakt">Kontakt</a>
             </div>
         </div>
@@ -147,7 +183,6 @@
             </div>
 
             <div id="content-okt" class="fade-in">
-                
                 <div style="margin-bottom: 50px;">
                     <h3>1. Flüge (Gabelflug & Hopping)</h3>
                     <div class="grid-3">
@@ -201,7 +236,7 @@
                                 <span>Pro Person</span>
                                 <span class="price-tag">~ 186 €</span>
                             </div>
-                            <a href="https://www.leonardo-hotels.de/ibiza/nyx-hotel-ibiza-adults-only" target="_blank" class="btn-link">Zur Website ↗</a>
+                            <a href="https://www.leonardo-hotels.de/ibiza/nyx-hotel-ibiza-adults-only" target="_blank" class="btn-link">Zur Website <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
                         </div>
 
                         <div class="card">
@@ -224,7 +259,7 @@
                                 <span>Pro Person</span>
                                 <span class="price-tag">~ 400 €</span>
                             </div>
-                            <a href="https://www.airbnb.de/rooms/44467317?check_in=2026-10-04&check_out=2026-10-10&guests=8&adults=8&s=67&unique_share_id=46916cf8-96b7-4a4e-b553-1a445865abf9" target="_blank" class="btn-link">Zu Airbnb ↗</a>
+                            <a href="https://www.airbnb.de/rooms/44467317?check_in=2026-10-04&check_out=2026-10-10&guests=8&adults=8&s=67&unique_share_id=46916cf8-96b7-4a4e-b553-1a445865abf9" target="_blank" class="btn-link">Zu Airbnb <i class="fa-brands fa-airbnb"></i></a>
                         </div>
                     </div>
                 </div>
@@ -284,9 +319,9 @@
                             </div>
                         </div>
 
-                        <div class="slider-section">
+                        <div class="slider-section" style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #eee;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label for="budget-slider" style="font-weight:600;">Variable Kosten (Schätzwert):</label>
+                                <label for="budget-slider" style="font-weight:600;">Variable Kosten (Dein Puffer):</label>
                                 <span id="var-display" style="font-weight:700; color:var(--accent);">600 €</span>
                             </div>
                             <p style="text-align:left; font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Essen, Drinks, Clubs, Sprit</p>
@@ -301,7 +336,6 @@
                         </div>
                     </div>
                 </section>
-
             </div> 
             
             <div id="content-sept" class="hidden fade-in">
@@ -310,7 +344,37 @@
                     <p>Sobald die Werte da sind, werden sie hier eingepflegt.</p>
                 </div>
             </div>
+        </div>
+    </section>
 
+    <section id="map-section" class="section-padding">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 20px;">Die Locations</h2>
+            
+            <div class="map-panel">
+                <span class="chip">
+                  <span class="dot dot-stay"></span>
+                  <label><input type="checkbox" id="f-stay" checked style="margin-right:5px;"/> NYX / Villa</label>
+                </span>
+              
+                <span class="chip">
+                  <span class="dot dot-ibiza"></span>
+                  <label><input type="checkbox" id="f-ibiza" checked style="margin-right:5px;"/> Ibiza Clubs</label>
+                </span>
+              
+                <span class="chip">
+                  <span class="dot dot-mallorca"></span>
+                  <label><input type="checkbox" id="f-mallorca" checked style="margin-right:5px;"/> Mallorca Clubs</label>
+                </span>
+              
+                <span class="chip" id="fit" style="border-color: var(--accent);">
+                    <i class="fa-solid fa-expand" style="color:var(--accent); font-size:0.8rem;"></i>
+                    <label style="color:var(--accent); cursor:pointer;">Reset View</label>
+                </span>
+            </div>
+              
+            <div id="bac-map"></div>
+            <div class="map-note">Interaktive Karte: Klicke auf die Marker für Details & Navigation.</div>
         </div>
     </section>
 
@@ -328,8 +392,10 @@
         </div>
     </footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
-        // Tab Switcher Logic
+        // === 1. Tab Switcher ===
         function switchTab(period) {
             const btnOkt = document.querySelectorAll('.tab-btn')[0];
             const btnSept = document.querySelectorAll('.tab-btn')[1];
@@ -349,22 +415,142 @@
             }
         }
 
-        // Budget Calculator Logic
+        // === 2. Budget Calculator ===
         const slider = document.getElementById('budget-slider');
         const varDisplay = document.getElementById('var-display');
         const varDisplaySmall = document.getElementById('var-display-small');
         const totalDisplay = document.getElementById('total-display');
-        const fixedCost = 1280; // Summe der Fixkosten aus dem HTML
+        const fixedCost = 1280; 
 
         slider.addEventListener('input', function() {
             const variableCost = parseInt(this.value);
             const total = fixedCost + variableCost;
             
-            // Update Text
             varDisplay.innerText = variableCost + " €";
             varDisplaySmall.innerText = variableCost;
             totalDisplay.innerText = "~ " + total.toLocaleString('de-DE') + " €";
         });
+
+        // === 3. MAP LOGIC ===
+        // Daten aus deiner Excel
+        const places = [
+            {"type":"stay","island":"Ibiza","name":"NYX Hotel","city":"San Antonio","address":"Carrer de s'Embarcador","lat":38.9709933,"lon":1.3046613},
+            {"type":"stay","island":"Mallorca","name":"Villa","city":"Mallorca","address":"Private Location","lat":39.60,"lon":2.80}, // Approx center
+
+            {"type":"club","island":"Ibiza","name":"Hï Ibiza","city":"Playa d'en Bossa","address":"Platja d'en Bossa, 07817","lat":38.8876,"lon":1.4056},
+            {"type":"club","island":"Ibiza","name":"Ushuaïa Ibiza","city":"Playa d'en Bossa","address":"Platja d'en Bossa, 07817","lat":38.8879,"lon":1.4062},
+            {"type":"club","island":"Ibiza","name":"UNVRS (ex Privilege)","city":"San Rafael","address":"Carretera Ibiza–San Antonio","lat":38.9206,"lon":1.3939},
+            {"type":"club","island":"Ibiza","name":"Pacha Ibiza","city":"Ibiza Stadt","address":"Av. 8 d'Agost, 07800","lat":38.9177,"lon":1.4392},
+            {"type":"club","island":"Ibiza","name":"Amnesia","city":"San Rafael","address":"Carretera Ibiza–San Antonio","lat":38.9533,"lon":1.3072},
+            {"type":"club","island":"Ibiza","name":"DC-10","city":"Sant Jordi","address":"Carretera Ibiza Airport","lat":38.8732,"lon":1.3858},
+            {"type":"club","island":"Ibiza","name":"Club Chinois","city":"Marina Botafoch","address":"Passeig Joan Carles I","lat":38.9185,"lon":1.4448},
+            {"type":"club","island":"Ibiza","name":"Eden","city":"San Antonio","address":"Carrer Salvador Espriu","lat":38.9821,"lon":1.3002},
+            {"type":"club","island":"Ibiza","name":"Es Paradis","city":"San Antonio","address":"Carrer Salvador Espriu","lat":38.9822,"lon":1.3004},
+            {"type":"club","island":"Ibiza","name":"Ibiza Rocks","city":"San Antonio","address":"Carrer Cervantes","lat":38.9812,"lon":1.3037},
+            {"type":"club","island":"Ibiza","name":"O Beach Ibiza","city":"San Antonio","address":"Camí des Molí","lat":38.9767,"lon":1.2965},
+            {"type":"club","island":"Ibiza","name":"Lío Ibiza","city":"Marina Botafoch","address":"Passeig Joan Carles I","lat":38.9189,"lon":1.4455},
+            {"type":"club","island":"Ibiza","name":"Pikes","city":"San Antonio","address":"Camí de Sa Vorera","lat":38.9629,"lon":1.3176},
+            {"type":"club","island":"Ibiza","name":"Cova Santa","city":"Sant Josep","address":"Carretera Sant Josep","lat":38.8896,"lon":1.2958},
+            {"type":"club","island":"Ibiza","name":"Blue Marlin","city":"Cala Jondal","address":"Cala Jondal","lat":38.8546,"lon":1.3045},
+            {"type":"club","island":"Ibiza","name":"Destino Pacha","city":"Cap Martinet","address":"Cap Martinet","lat":38.9241,"lon":1.4724},
+
+            {"type":"club","island":"Mallorca","name":"BCM Planet Dance","city":"Magaluf","address":"Av. S'Olivera","lat":39.5099,"lon":2.5381},
+            {"type":"club","island":"Mallorca","name":"Megapark","city":"El Arenal","address":"Carrer del Pare Bartomeu Salvà","lat":39.5039,"lon":2.7529},
+            {"type":"club","island":"Mallorca","name":"Bierkönig","city":"El Arenal","address":"Carrer del Pare Bartomeu Salvà","lat":39.5042,"lon":2.7534},
+            {"type":"club","island":"Mallorca","name":"Social Club","city":"Palma","address":"Carrer de la Missió","lat":39.5718,"lon":2.6521},
+            {"type":"club","island":"Mallorca","name":"Tito's","city":"Palma","address":"Av. de Gabriel Roca","lat":39.5634,"lon":2.6255},
+            {"type":"club","island":"Mallorca","name":"R33 Club","city":"Palma","address":"Carrer de Ramón y Cajal","lat":39.5712,"lon":2.6418},
+            {"type":"club","island":"Mallorca","name":"Shamrock","city":"Palma","address":"Passeig Mallorca","lat":39.5715,"lon":2.6411},
+            {"type":"club","island":"Mallorca","name":"Atomic Garden","city":"Palma","address":"Carrer de Sant Feliu","lat":39.5709,"lon":2.6443},
+            {"type":"club","island":"Mallorca","name":"Mood Beach","city":"Portals Nous","address":"Carrer de la Platja","lat":39.5378,"lon":2.5796},
+            {"type":"club","island":"Mallorca","name":"Zhero Beach Club","city":"Palmanova","address":"Carrer de la Caravel·la","lat":39.5288,"lon":2.5369},
+            {"type":"club","island":"Mallorca","name":"Balneario 6","city":"El Arenal","address":"Ballermann 6","lat":39.5029,"lon":2.7542},
+            {"type":"club","island":"Mallorca","name":"Nikki Beach","city":"Magaluf","address":"Av. Notari Alemany","lat":39.5069,"lon":2.5389},
+            {"type":"club","island":"Mallorca","name":"Gran Folies","city":"Port d'Andratx","address":"Cala Llamp","lat":39.5361,"lon":2.3869},
+            {"type":"club","island":"Mallorca","name":"Oceans Beach Club","city":"Magaluf","address":"Av. S'Olivera","lat":39.5095,"lon":2.5369}
+        ];
+
+        // Map Setup
+        const map = L.map("bac-map", { scrollWheelZoom: false }).setView([39.2, 2.0], 9);
+
+        // CartoDB Voyager Tiles (High End Look)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Layer Groups
+        const layerStay = L.layerGroup().addTo(map);
+        const layerIbiza = L.layerGroup().addTo(map);
+        const layerMallorca = L.layerGroup().addTo(map);
+
+        // Style Function
+        const styleFor = (p) => {
+            if (p.type === "stay") {
+                return { radius: 9, color: "#164e63", fillColor: "#0ea5b7", fillOpacity: 1, weight: 2 };
+            }
+            if (p.island === "Ibiza") {
+                return { radius: 7, color: "#581c87", fillColor: "#9333ea", fillOpacity: 0.8, weight: 1 };
+            }
+            return { radius: 7, color: "#9a3412", fillColor: "#ea580c", fillOpacity: 0.8, weight: 1 };
+        };
+
+        const allLatLng = [];
+
+        // Render Markers
+        places.forEach((p) => {
+            const ll = [p.lat, p.lon];
+            allLatLng.push(ll);
+
+            const popup = `
+              <div style="min-width:180px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px; color:#111827;">
+                  ${p.name}
+                </div>
+                <div style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+                  ${p.type === "stay" ? (p.island === "Ibiza" ? "Ibiza · Hotel" : "Mallorca · Villa") : `${p.island} · ${p.city}`}
+                </div>
+                
+                <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}" 
+                   target="_blank" 
+                   style="display:inline-block; font-size:12px; font-weight:600; color:#d4af37; text-decoration:none; border:1px solid #eee; padding:4px 10px; border-radius:4px;">
+                   <i class="fa-solid fa-location-arrow"></i> Route
+                </a>
+              </div>
+            `;
+
+            const marker = L.circleMarker(ll, styleFor(p)).bindPopup(popup);
+
+            if (p.type === "stay") marker.addTo(layerStay);
+            else if (p.island === "Ibiza") marker.addTo(layerIbiza);
+            else marker.addTo(layerMallorca);
+        });
+
+        // Fit Bounds function
+        const fitAll = () => {
+            const bounds = L.latLngBounds(allLatLng);
+            map.fitBounds(bounds.pad(0.1));
+        };
+        fitAll();
+
+        // Filter Handling
+        const fStay = document.getElementById("f-stay");
+        const fIbiza = document.getElementById("f-ibiza");
+        const fMallorca = document.getElementById("f-mallorca");
+        const btnFit = document.getElementById("fit");
+
+        function applyFilters() {
+            if (fStay?.checked) layerStay.addTo(map); else map.removeLayer(layerStay);
+            if (fIbiza?.checked) layerIbiza.addTo(map); else map.removeLayer(layerIbiza);
+            if (fMallorca?.checked) layerMallorca.addTo(map); else map.removeLayer(layerMallorca);
+        }
+
+        fStay?.addEventListener("change", applyFilters);
+        fIbiza?.addEventListener("change", applyFilters);
+        fMallorca?.addEventListener("change", applyFilters);
+        btnFit?.addEventListener("click", (e) => { e.preventDefault(); fitAll(); });
+
     </script>
 </body>
 </html>
